@@ -1,0 +1,20 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 极简渐变 -->
+    <linearGradient id="coral-minimal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6B35" />
+      <stop offset="100%" stop-color="#FF8C42" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 极简珊瑚形状 -->
+  <path d="M100,50 Q120,70 100,90 Q80,70 100,50 Z" fill="url(#coral-minimal)" opacity="0.9"/>
+  <path d="M100,90 Q120,110 100,130 Q80,110 100,90 Z" fill="url(#coral-minimal)" opacity="0.8"/>
+  <path d="M100,130 Q110,150 100,170 Q90,150 100,130 Z" fill="url(#coral-minimal)" opacity="0.7"/>
+  
+  <!-- 中心装饰点 -->
+  <circle cx="100" cy="110" r="5" fill="#FFD166"/>
+  
+  <!-- 极简文字 -->
+  <text x="100" y="190" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#FF6B35">CoralUI</text>
+</svg>
