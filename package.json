@@ -10,6 +10,7 @@
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "generate-icons": "node scripts/generate-icons.js",
+    "verify-env": "node scripts/verify-env.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "keywords": [
@@ -57,9 +58,20 @@
       "electron/**/*",
       "dist/**/*"
     ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
     "mac": {
       "category": "public.app-category.developer-tools",
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "需要系统事件权限来执行命令",
+        "NSAppleScriptEnabled": true
+      }
     },
     "win": {
       "target": [

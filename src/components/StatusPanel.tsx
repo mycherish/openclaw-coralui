@@ -7,8 +7,6 @@
 import React from 'react'
 
 interface StatusPanelProps {
-  activeTab: 'status' | 'logs'
-  onTabChange: (tab: 'status' | 'logs') => void
   healthStatus: {
     healthy: boolean
     output: string
@@ -28,8 +26,6 @@ interface StatusPanelProps {
 }
 
 const StatusPanel: React.FC<StatusPanelProps> = ({
-  activeTab,
-  onTabChange,
   healthStatus,
   nodesStatus,
   modelsStatus,
@@ -52,8 +48,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
     title: string,
     icon: string,
     status: boolean | null,
-    output: string,
-    colorClass: string
+    output: string
   ) => (
     <div className="card">
       <div className="card-header">
@@ -99,8 +94,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
             '健康检查',
             '❤️',
             healthStatus.healthy,
-            healthStatus.output,
-            healthStatus.healthy ? 'green' : 'red'
+            healthStatus.output
           )}
 
           {/* 节点状态 */}
@@ -108,8 +102,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
             '节点状态',
             '🧩',
             nodesStatus.success,
-            nodesStatus.output,
-            nodesStatus.success ? 'green' : 'orange'
+            nodesStatus.output
           )}
 
           {/* 模型状态 */}
@@ -117,8 +110,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
             '模型状态',
             '🤖',
             modelsStatus.success,
-            modelsStatus.output,
-            modelsStatus.success ? 'green' : 'orange'
+            modelsStatus.output
           )}
 
           {/* 渠道状态 */}
@@ -126,8 +118,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
             '渠道状态',
             '🔗',
             channelsStatus.success,
-            channelsStatus.output,
-            channelsStatus.success ? 'green' : 'orange'
+            channelsStatus.output
           )}
         </div>
       </div>

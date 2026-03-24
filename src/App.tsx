@@ -4,7 +4,7 @@
  * Responsible: Application layout and routing
  */
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useOpenClaw } from './hooks/useOpenClaw'
 import Header from './components/Header'
 import SystemInfo from './components/SystemInfo'
@@ -29,21 +29,6 @@ const App: React.FC = () => {
     loading,
     refreshAll
   } = useOpenClaw()
-
-  // 当前标签页
-  const [activeTab, setActiveTab] = useState<'status' | 'logs'>('status')
-
-  /**
-   * 格式化系统平台名称
-   */
-  const formatPlatform = (platform: string): string => {
-    const platforms: Record<string, string> = {
-      'darwin': 'macOS',
-      'win32': 'Windows',
-      'linux': 'Linux'
-    }
-    return platforms[platform] || platform
-  }
 
   return (
     <div className="app-container">
@@ -88,8 +73,6 @@ const App: React.FC = () => {
             {/* 状态面板 */}
             {installStatus.installed && (
               <StatusPanel
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
                 healthStatus={healthStatus}
                 nodesStatus={nodesStatus}
                 modelsStatus={modelsStatus}
@@ -106,16 +89,6 @@ const App: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* 日志面板 */}
-        {installStatus.installed && (
-          <div className="mt-6">
-            <LogsPanel
-              logs={logs}
-              loading={loading}
-            />
-          </div>
-        )}
       </div>
     </div>
   )

@@ -12,6 +12,94 @@ const os = require('os')
 let mainWindow = null
 
 /**
+ * 获取用户 shell 环境变量
+ * 在 macOS/Linux 上，加载 ~/.zshrc 或 ~/.bashrc
+ */
+function getUserEnv() {
+  return new Promise((resolve) => {
+    const shell = process.env.SHELL || '/bin/zsh'
+    const loginShell = spawn(shell, ['-ilc', 'env'], {
+      env: { ...process.env }
+    })
+
+    let output = ''
+    loginShell.stdout.on('data', (data) => {
+      output += data.toString()
+    })
+
+    loginShell.on('close', (code) => {
+      if (code === 0 && output) {
+        // 解析环境变量
+        const envLines = output.split('\n').filter(line => line.includes('='))
+        const env = {}
+        for (const line of envLines) {
+          const [key, ...valueParts] = line.split('=')
+          if (key && valueParts.length > 0) {
+            env[key] = valueParts.join('=')
+          }
+        }
+        resolve(env)
+      } else {
+        // 如果失败，使用当前环境
+        resolve(process.env)
+      }
+    })
+
+    loginShell.on('error', () => {
+      resolve(process.env)
+    })
+  })
+}
+
+/**
+ * 执行命令的通用函数
+ * @param {string} command - 要执行的命令
+ * @param {number} timeout - 超时时间（毫秒）
+ * @returns {Promise} 返回执行结果
+ */
+async function executeCommand(command, timeout = 10000) {
+  try {
+    // 获取用户环境（包含 PATH）
+    const env = await getUserEnv()
+
+    return new Promise((resolve) => {
+      const childProcess = exec(command, {
+        timeout,
+        env: { ...env, PATH: env.PATH }, // 确保使用用户的 PATH
+        shell: process.env.SHELL || '/bin/zsh' // 使用用户 shell
+      }, (error, stdout, stderr) => {
+        resolve({
+          success: !error,
+          output: stdout || stderr || (error ? error.message : '')
+        })
+      })
+
+      // 处理超时
+      childProcess.on('error', (error) => {
+        resolve({
+          success: false,
+          output: `命令执行失败: ${error.message}`
+        })
+      })
+
+      // 处理超时
+      childProcess.on('timeout', () => {
+        childProcess.kill()
+        resolve({
+          success: false,
+          output: '命令执行超时'
+        })
+      })
+    })
+  } catch (error) {
+    return {
+      success: false,
+      output: `执行命令时出错: ${error.message}`
+    }
+  }
+}
+
+/**
  * 创建主窗口
  */
 function createWindow() {
@@ -85,87 +173,63 @@ ipcMain.handle('get-system-info', () => {
 /**
  * 检查 OpenClaw 是否安装
  */
-ipcMain.handle('check-openclaw-installed', () => {
-  return new Promise((resolve) => {
-    exec('openclaw --version', (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          installed: false,
-          error: stderr || error.message
-        })
-      } else {
-        // 解析版本号
-        const versionMatch = stdout.match(/(\d+\.\d+\.\d+)/)
-        resolve({
-          installed: true,
-          version: versionMatch ? versionMatch[1] : 'unknown'
-        })
-      }
-    })
-  })
+ipcMain.handle('check-openclaw-installed', async () => {
+  const result = await executeCommand('openclaw --version')
+  if (result.success) {
+    // 解析版本号
+    const versionMatch = result.output.match(/(\d+\.\d+\.\d+)/)
+    return {
+      installed: true,
+      version: versionMatch ? versionMatch[1] : 'unknown'
+    }
+  } else {
+    return {
+      installed: false,
+      error: result.output
+    }
+  }
 })
 
 /**
  * 获取 Gateway 状态
  */
-ipcMain.handle('get-gateway-status', () => {
-  return new Promise((resolve) => {
-    exec('openclaw gateway status', { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          status: 'unknown',
-          output: stderr || error.message
-        })
-      } else {
-        // 解析状态
-        let gatewayStatus = 'unknown'
+ipcMain.handle('get-gateway-status', async () => {
+  const result = await executeCommand('openclaw gateway status', 10000)
+  
+  // 解析状态
+  let gatewayStatus = 'unknown'
+  const outputLower = result.output.toLowerCase()
+  
+  // 检查运行中的标志
+  if (outputLower.includes('runtime: running') ||
+      outputLower.includes('running (pid') ||
+      outputLower.includes('listening:') ||
+      outputLower.includes('rpc probe: ok')) {
+    gatewayStatus = 'running'
+  }
+  // 检查已停止的标志
+  else if (outputLower.includes('runtime: stopped') ||
+           outputLower.includes('not running') ||
+           outputLower.includes('inactive') ||
+           outputLower.includes('service not found')) {
+    gatewayStatus = 'stopped'
+  }
 
-        // 支持多种输出格式
-        const outputLower = stdout.toLowerCase()
-        
-        // 检查运行中的标志
-        if (outputLower.includes('runtime: running') ||
-            outputLower.includes('running (pid') ||
-            outputLower.includes('listening:') ||
-            outputLower.includes('rpc probe: ok')) {
-          gatewayStatus = 'running'
-        }
-        // 检查已停止的标志
-        else if (outputLower.includes('runtime: stopped') ||
-                 outputLower.includes('not running') ||
-                 outputLower.includes('inactive') ||
-                 outputLower.includes('service not found')) {
-          gatewayStatus = 'stopped'
-        }
-
-        resolve({
-          status: gatewayStatus,
-          output: stdout
-        })
-      }
-    })
-  })
+  return {
+    status: gatewayStatus,
+    output: result.output
+  }
 })
 
 /**
  * 获取完整系统状态（包括健康检查）
  */
-ipcMain.handle('get-health-status', () => {
-  return new Promise((resolve) => {
-    exec('openclaw health', { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          healthy: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          healthy: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('get-health-status', async () => {
+  const result = await executeCommand('openclaw health', 10000)
+  return {
+    healthy: result.success,
+    output: result.output
+  }
 })
 
 /**
@@ -182,94 +246,38 @@ ipcMain.handle('install-openclaw', async (event, method) => {
   if (!command) {
     return {
       success: false,
-      error: '不支持的安装方法'
+      output: '不支持的安装方法'
     }
   }
 
-  return new Promise((resolve) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+  return await executeCommand(command, 60000) // 安装可能需要更长时间
 })
 
 /**
  * 启动 Gateway
  */
-ipcMain.handle('start-gateway', () => {
-  return new Promise((resolve) => {
-    exec('openclaw gateway start', (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('start-gateway', async () => {
+  return await executeCommand('openclaw gateway start')
 })
 
 /**
  * 停止 Gateway
  */
-ipcMain.handle('stop-gateway', () => {
-  return new Promise((resolve) => {
-    exec('openclaw gateway stop', (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('stop-gateway', async () => {
+  return await executeCommand('openclaw gateway stop')
 })
 
 /**
  * 重启 Gateway
  */
-ipcMain.handle('restart-gateway', () => {
-  return new Promise((resolve) => {
-    exec('openclaw gateway restart', (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('restart-gateway', async () => {
+  return await executeCommand('openclaw gateway restart')
 })
 
 /**
  * 卸载 OpenClaw
  */
-ipcMain.handle('uninstall-openclaw', (event, level) => {
+ipcMain.handle('uninstall-openclaw', async (event, level) => {
   // level: 'service' | 'state' | 'workspace' | 'all'
   const commands = {
     'service': 'openclaw uninstall --service --yes',
@@ -279,104 +287,37 @@ ipcMain.handle('uninstall-openclaw', (event, level) => {
   }
 
   const command = commands[level] || commands['all']
-
-  return new Promise((resolve) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+  return await executeCommand(command)
 })
 
 /**
  * 获取日志（最近 20 行）
  */
-ipcMain.handle('get-logs', () => {
-  return new Promise((resolve) => {
-    exec('openclaw logs --lines 20', (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          logs: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          logs: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('get-logs', async () => {
+  const result = await executeCommand('openclaw logs --lines 20')
+  return {
+    success: result.success,
+    logs: result.output
+  }
 })
 
 /**
  * 获取节点状态
  */
-ipcMain.handle('get-nodes-status', () => {
-  return new Promise((resolve) => {
-    exec('openclaw nodes status', { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('get-nodes-status', async () => {
+  return await executeCommand('openclaw nodes status', 10000)
 })
 
 /**
  * 获取模型状态
  */
-ipcMain.handle('get-models-status', () => {
-  return new Promise((resolve) => {
-    exec('openclaw models status', { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('get-models-status', async () => {
+  return await executeCommand('openclaw models status', 10000)
 })
 
 /**
  * 获取渠道状态
  */
-ipcMain.handle('get-channels-status', () => {
-  return new Promise((resolve) => {
-    exec('openclaw channels status', { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({
-          success: false,
-          output: stderr || error.message
-        })
-      } else {
-        resolve({
-          success: true,
-          output: stdout
-        })
-      }
-    })
-  })
+ipcMain.handle('get-channels-status', async () => {
+  return await executeCommand('openclaw channels status', 10000)
 })

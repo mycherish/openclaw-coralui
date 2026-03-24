@@ -71,22 +71,6 @@ interface ChannelsStatus {
 }
 
 /**
- * 日志接口
- */
-interface Logs {
-  success: boolean
-  logs: string
-}
-
-/**
- * 安装结果接口
- */
-interface InstallResult {
-  success: boolean
-  output: string
-}
-
-/**
  * 操作结果接口
  */
 interface OperationResult {
@@ -262,7 +246,7 @@ export const useOpenClaw = () => {
   /**
    * 安装 OpenClaw
    */
-  const installOpenClaw = useCallback(async (method: 'script' | 'npm' | 'pnpm'): Promise<InstallResult> => {
+  const installOpenClaw = useCallback(async (method: 'script' | 'npm' | 'pnpm'): Promise<OperationResult> => {
     try {
       setLoading(true)
       const result = await window.electron.installOpenClaw(method)
