@@ -15,6 +15,11 @@ export interface ElectronAPI {
   }>
 
   /**
+   * 获取当前平台
+   */
+  getPlatform(): 'darwin' | 'win32' | 'linux'
+
+  /**
    * 检查 OpenClaw 是否安装
    */
   checkOpenClawInstalled(): Promise<{

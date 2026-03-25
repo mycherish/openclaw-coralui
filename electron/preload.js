@@ -16,6 +16,11 @@ contextBridge.exposeInMainWorld('electron', {
   getSystemInfo: () => ipcRenderer.invoke('get-system-info'),
 
   /**
+   * 获取当前平台
+   */
+  getPlatform: () => process.platform,
+
+  /**
    * 检查 OpenClaw 是否安装
    */
   checkOpenClawInstalled: () => ipcRenderer.invoke('check-openclaw-installed'),

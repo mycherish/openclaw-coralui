@@ -134,6 +134,7 @@ If the app cannot detect OpenClaw, try these steps:
 **OpenClaw 检测问题**：
 如果应用无法检测到 OpenClaw，请尝试以下步骤：
 
+### **macOS/Linux 用户**
 1. **Install OpenClaw**:
    ```bash
    curl -fsSL https://openclaw.ai/install.sh | bash
@@ -144,11 +145,37 @@ If the app cannot detect OpenClaw, try these steps:
    openclaw --version
    ```
 
+### **Windows 用户**
+1. **Install OpenClaw** (需要管理员权限):
+   ```powershell
+   irm https://openclaw.ai/install.ps1 | iex
+   ```
+
+2. **手动安装步骤**:
+   - 按 `Win + X`，选择 "Windows PowerShell (管理员)" 或 "终端 (管理员)"
+   - 粘贴并执行上述命令
+   - 或在开始菜单搜索 "PowerShell"，右键选择"以管理员身份运行"
+
+3. **Verify Installation**:
+   ```powershell
+   openclaw --version
+   ```
+
+**Windows 用户注意**:
+- 安装需要管理员权限
+- 应用内点击安装会自动请求 UAC 提示
+- UAC 提示时请点击"是"以继续安装
+
+### **通用步骤**
 3. **Restart the App** (Important!)
 
 4. **If Still Not Working** - Launch from terminal:
    ```bash
+   # macOS
    /Applications/OpenClaw\ CoralUI.app/Contents/MacOS/OpenClaw\ CoralUI
+   
+   # Windows
+   # 从开始菜单或桌面快捷方式启动
    ```
 
 For detailed troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)

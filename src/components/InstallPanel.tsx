@@ -52,6 +52,19 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
   }
 
   /**
+   * 获取当前平台的一键脚本命令
+   */
+  const getScriptCommand = (): string => {
+    const platform = window.electron.getPlatform()
+    if (platform === 'win32') {
+      return 'irm https://openclaw.ai/install.ps1 | iex' +
+        '\n\n⚠️ Windows用户需要以管理员身份运行PowerShell'
+    } else {
+      return 'curl -fsSL https://openclaw.ai/install.sh | bash'
+    }
+  }
+
+  /**
    * 安装 OpenClaw
    */
   const handleInstall = async () => {
@@ -159,7 +172,7 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
                     最快速最简单的安装方式，自动处理所有依赖
                   </div>
                   <code className="install-method-tag">
-                    curl -fsSL https://openclaw.ai/install.sh | bash
+                    {getScriptCommand()}
                   </code>
                 </div>
 

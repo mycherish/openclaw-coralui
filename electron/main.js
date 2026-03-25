@@ -236,18 +236,38 @@ ipcMain.handle('get-health-status', async () => {
  * 安装 OpenClaw（一键脚本方式）
  */
 ipcMain.handle('install-openclaw', async (event, method) => {
-  const methods = {
-    'script': 'curl -fsSL https://openclaw.ai/install.sh | bash',
-    'npm': 'npm i -g openclaw',
-    'pnpm': 'pnpm i -g openclaw'
-  }
-
-  const command = methods[method]
-  if (!command) {
-    return {
-      success: false,
-      output: '不支持的安装方法'
-    }
+  // 根据平台选择合适的安装命令
+  let command
+  const platform = process.platform
+  
+  switch (method) {
+    case 'script':
+      if (platform === 'win32') {
+        // Windows 使用 PowerShell 安装（创建临时脚本文件）
+        // 这样可以避免多层引号嵌套问题
+        command = `powershell -Command "$tempScript = [System.IO.Path]::GetTempFileName() + '.ps1'; Set-Content -Path $tempScript -Value 'irm https://openclaw.ai/install.ps1 | iex'; Start-Process PowerShell -Verb RunAs -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tempScript; Start-Sleep -Seconds 1; Remove-Item -Path $tempScript -Force"`
+      } else if (platform === 'darwin') {
+        // macOS 使用 curl
+        command = 'curl -fsSL https://openclaw.ai/install.sh | bash'
+      } else {
+        // Linux 使用 curl
+        command = 'curl -fsSL https://openclaw.ai/install.sh | bash'
+      }
+      break
+      
+    case 'npm':
+      command = 'npm i -g openclaw'
+      break
+      
+    case 'pnpm':
+      command = 'pnpm i -g openclaw'
+      break
+      
+    default:
+      return {
+        success: false,
+        output: '不支持的安装方法'
+      }
   }
 
   return await executeCommand(command, 60000) // 安装可能需要更长时间
