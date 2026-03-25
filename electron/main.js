@@ -256,7 +256,8 @@ ipcMain.handle('install-openclaw', async (event, method) => {
       if (platform === 'win32') {
         // Windows 使用 PowerShell 安装（创建临时脚本文件）
         // 这样可以避免多层引号嵌套问题
-        command = `powershell -Command "$tempScript = [System.IO.Path]::GetTempFileName() + '.ps1'; Set-Content -Path $tempScript -Value 'irm https://openclaw.ai/install.ps1 | iex'; Start-Process PowerShell -Verb RunAs -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tempScript; Start-Sleep -Seconds 1; Remove-Item -Path $tempScript -Force"`
+        // 注意：JavaScript 模板字符串中的 $ 需要转义为 \$
+        command = 'powershell -Command "$tempScript = [System.IO.Path]::GetTempFileName() + \'.ps1\'; Set-Content -Path $tempScript -Value \'irm https://openclaw.ai/install.ps1 | iex\'; Start-Process PowerShell -Verb RunAs -ArgumentList \'-NoProfile\', \'-ExecutionPolicy\', \'Bypass\', \'-File\', $tempScript; Start-Sleep -Seconds 1; Remove-Item -Path $tempScript -Force"'
       } else if (platform === 'darwin') {
         // macOS 使用 curl
         command = 'curl -fsSL https://openclaw.ai/install.sh | bash'
