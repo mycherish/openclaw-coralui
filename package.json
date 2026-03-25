@@ -85,22 +85,22 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
-      "nsis": {
-        "oneClick": false,
-        "allowElevation": true,
-        "allowToChangeInstallationDirectory": true,
-        "installerIcon": "build/icon.ico",
-        "uninstallerIcon": "build/icon.ico",
-        "createDesktopShortcut": true,
-        "createStartMenuShortcut": true,
-        "shortcutName": "OpenClaw CoralUI",
-        "perMachine": true,
-        "deleteAppDataOnUninstall": false
-      },
-      "portable": {
-        "artifactName": "${productName}-Portable-${version}.${ext}"
-      }
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OpenClaw CoralUI",
+      "perMachine": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     },
     "linux": {
       "target": [
