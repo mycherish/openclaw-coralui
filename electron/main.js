@@ -62,11 +62,22 @@ async function executeCommand(command, timeout = 10000) {
     // 获取用户环境（包含 PATH）
     const env = await getUserEnv()
 
+    // 根据平台选择合适的 shell
+    const platform = process.platform
+    let shell
+    if (platform === 'win32') {
+      // Windows 使用 PowerShell
+      shell = 'powershell.exe'
+    } else {
+      // macOS/Linux 使用 zsh 或 bash
+      shell = process.env.SHELL || (platform === 'darwin' ? '/bin/zsh' : '/bin/bash')
+    }
+
     return new Promise((resolve) => {
       const childProcess = exec(command, {
         timeout,
         env: { ...env, PATH: env.PATH }, // 确保使用用户的 PATH
-        shell: process.env.SHELL || '/bin/zsh' // 使用用户 shell
+        shell: shell // 使用平台特定的 shell
       }, (error, stdout, stderr) => {
         resolve({
           success: !error,
