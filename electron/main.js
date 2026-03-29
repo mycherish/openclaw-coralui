@@ -470,12 +470,15 @@ ipcMain.handle('install-openclaw', async (event, method) => {
       return new Promise((resolve) => {
         const https = require('https')
         const req = https.get(`${url}/openclaw`, { 
-          timeout: 3000,
-          rejectUnauthorized: false // 允许自签名证书
+          timeout: 3000
         }, (res) => {
           resolve(res.statusCode === 200 || res.statusCode === 404) // 404 也算成功（说明镜像源可访问）
         })
-        req.on('error', () => resolve(false))
+        req.on('error', (error) => {
+          // 记录错误但不暴露证书问题
+          console.warn(`Mirror test failed for ${url}:`, error.message)
+          resolve(false)
+        })
         req.on('timeout', () => {
           req.destroy()
           resolve(false)
