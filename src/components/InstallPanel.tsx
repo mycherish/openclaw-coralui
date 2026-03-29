@@ -358,73 +358,117 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, 
             {/* 卸载级别选择 */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">选择卸载级别</h3>
-              <RadioGroup 
-                value={selectedUninstallLevel} 
+              <RadioGroup
+                value={selectedUninstallLevel}
                 onValueChange={(value: any) => setSelectedUninstallLevel(value)}
                 className="grid grid-cols-2 gap-3"
               >
                 {/* 仅卸载服务 */}
-                <label 
+                <label
                   htmlFor="service"
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
-                    selectedUninstallLevel === 'service' 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
+                  className={`group relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 text-center overflow-hidden ${
+                    selectedUninstallLevel === 'service'
+                      ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20 scale-[1.02]'
+                      : 'border-border hover:border-green-500/50 hover:bg-green-500/5'
                   }`}
                 >
+                  {/* 选中指示器 */}
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500/0 via-green-500 to-green-500/0 transition-all duration-500 ${
+                    selectedUninstallLevel === 'service' ? 'opacity-100' : 'opacity-0'
+                  }`} />
+
                   <RadioGroupItem value="service" id="service" className="sr-only" />
-                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                  <CheckCircle2 className={`w-8 h-8 transition-all duration-300 ${
+                    selectedUninstallLevel === 'service'
+                      ? 'text-green-400 scale-110'
+                      : 'text-green-500/70 group-hover:scale-105'
+                  }`} />
                   <div className="font-semibold">仅卸载服务</div>
                   <div className="text-xs text-muted-foreground">保留配置和数据</div>
-                  <Badge variant="success">轻</Badge>
+                  <Badge variant="success" className="transition-all duration-300">
+                    轻
+                  </Badge>
                 </label>
 
                 {/* 删除状态数据 */}
-                <label 
+                <label
                   htmlFor="state"
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
-                    selectedUninstallLevel === 'state' 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
+                  className={`group relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 text-center overflow-hidden ${
+                    selectedUninstallLevel === 'state'
+                      ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/20 scale-[1.02]'
+                      : 'border-border hover:border-orange-500/50 hover:bg-orange-500/5'
                   }`}
                 >
+                  {/* 选中指示器 */}
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0 transition-all duration-500 ${
+                    selectedUninstallLevel === 'state' ? 'opacity-100' : 'opacity-0'
+                  }`} />
+
                   <RadioGroupItem value="state" id="state" className="sr-only" />
-                  <AlertTriangle className="w-6 h-6 text-orange-500" />
+                  <AlertTriangle className={`w-8 h-8 transition-all duration-300 ${
+                    selectedUninstallLevel === 'state'
+                      ? 'text-orange-400 scale-110'
+                      : 'text-orange-500/70 group-hover:scale-105'
+                  }`} />
                   <div className="font-semibold">删除状态数据</div>
                   <div className="text-xs text-muted-foreground">删除状态和配置</div>
-                  <Badge variant="warning">中</Badge>
+                  <Badge variant="warning" className="transition-all duration-300">
+                    中
+                  </Badge>
                 </label>
 
                 {/* 删除工作区 */}
-                <label 
+                <label
                   htmlFor="workspace"
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
-                    selectedUninstallLevel === 'workspace' 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
+                  className={`group relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 text-center overflow-hidden ${
+                    selectedUninstallLevel === 'workspace'
+                      ? 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/20 scale-[1.02]'
+                      : 'border-border hover:border-red-500/50 hover:bg-red-500/5'
                   }`}
                 >
+                  {/* 选中指示器 */}
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500/0 via-red-500 to-red-500/0 transition-all duration-500 ${
+                    selectedUninstallLevel === 'workspace' ? 'opacity-100' : 'opacity-0'
+                  }`} />
+
                   <RadioGroupItem value="workspace" id="workspace" className="sr-only" />
-                  <Trash2 className="w-6 h-6 text-red-500" />
+                  <Trash2 className={`w-8 h-8 transition-all duration-300 ${
+                    selectedUninstallLevel === 'workspace'
+                      ? 'text-red-400 scale-110'
+                      : 'text-red-500/70 group-hover:scale-105'
+                  }`} />
                   <div className="font-semibold">删除工作区</div>
                   <div className="text-xs text-muted-foreground">包括你的数据</div>
-                  <Badge variant="destructive">重</Badge>
+                  <Badge variant="destructive" className="transition-all duration-300">
+                    重
+                  </Badge>
                 </label>
 
                 {/* 完全卸载 */}
-                <label 
+                <label
                   htmlFor="all"
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
-                    selectedUninstallLevel === 'all' 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-border hover:border-primary/50'
+                  className={`group relative flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 text-center overflow-hidden ${
+                    selectedUninstallLevel === 'all'
+                      ? 'border-red-600 bg-red-600/10 shadow-lg shadow-red-600/20 scale-[1.02]'
+                      : 'border-border hover:border-red-600/50 hover:bg-red-600/5'
                   }`}
                 >
+                  {/* 选中指示器 */}
+                  <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600/0 via-red-600 to-red-600/0 transition-all duration-500 ${
+                    selectedUninstallLevel === 'all' ? 'opacity-100' : 'opacity-0'
+                  }`} />
+
                   <RadioGroupItem value="all" id="all" className="sr-only" />
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <AlertTriangle className={`w-8 h-8 transition-all duration-300 ${
+                    selectedUninstallLevel === 'all'
+                      ? 'text-red-500 scale-110'
+                      : 'text-red-600/70 group-hover:scale-105'
+                  }`} />
                   <div className="font-semibold">完全卸载</div>
                   <div className="text-xs text-muted-foreground">彻底删除所有</div>
-                  <Badge variant="destructive">彻底</Badge>
+                  <Badge variant="destructive" className="transition-all duration-300">
+                    彻底
+                  </Badge>
                 </label>
               </RadioGroup>
             </div>
