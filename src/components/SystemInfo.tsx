@@ -1,10 +1,13 @@
 /**
- * SystemInfo 组件 - macOS 风格
- *
+ * SystemInfo 组件
+ * 
  * 负责：显示系统信息和 OpenClaw 安装状态
  */
 
 import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Cpu, Monitor, Globe, Info } from 'lucide-react'
 
 interface SystemInfoProps {
   systemInfo: {
@@ -37,71 +40,92 @@ const SystemInfo: React.FC<SystemInfoProps> = ({ systemInfo, installStatus }) =>
    * 格式化系统版本
    */
   const formatVersion = (version: string): string => {
-    // 简化版本显示
     const parts = version.split('.')
     return parts.slice(0, 2).join('.')
   }
 
+  /**
+   * 获取平台图标
+   */
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'darwin':
+        return '🍎'
+      case 'win32':
+        return '🪟'
+      case 'linux':
+        return '🐧'
+      default:
+        return '💻'
+    }
+  }
+
   return (
-    <div className="card">
-      {/* 卡片头部 */}
-      <div className="card-header">
-        <div className="icon-container">
-          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-          </svg>
-        </div>
-        <div>
-          <div className="card-title">系统信息</div>
-          <div className="card-subtitle">当前系统环境和 OpenClaw 状态</div>
-        </div>
-      </div>
-
-      {/* 卡片内容 */}
-      <div className="card-body">
-        {/* OpenClaw 状态卡片 */}
-        <div className={`status-card mb-4 ${installStatus.installed ? 'border-green-500/30' : 'border-red-500/30'}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="status-card-title">OpenClaw 状态</div>
-              <div className="status-card-value" style={{
-                color: installStatus.installed ? '#32d74b' : '#ff453a'
-              }}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Info className="w-5 h-5" />
+          系统信息
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* OpenClaw 状态 */}
+        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-muted-foreground">OpenClaw 状态</p>
+            <div className="flex items-center gap-2">
+              <Badge variant={installStatus.installed ? 'success' : 'destructive'}>
                 {installStatus.installed ? '已安装' : '未安装'}
-              </div>
-            </div>
-            <div className="text-4xl">
-              {installStatus.installed ? '✅' : '❌'}
+              </Badge>
+              {installStatus.installed && installStatus.version && (
+                <Badge variant="outline">v{installStatus.version}</Badge>
+              )}
             </div>
           </div>
-          {installStatus.installed && installStatus.version && (
-            <div className="status-card-sub mt-3">
-              版本: <span className="text-white/70">{installStatus.version}</span>
-            </div>
-          )}
+          <div className="text-3xl">
+            {installStatus.installed ? '✅' : '❌'}
+          </div>
         </div>
 
-        {/* 系统信息网格 */}
-        <div className="info-list">
-          <div className="info-item">
-            <span className="info-label">操作系统</span>
-            <span className="info-value">{formatPlatform(systemInfo.platform)}</span>
+        {/* 系统信息列表 */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between py-2 border-b">
+            <span className="text-sm text-muted-foreground flex items-center gap-2">
+              <Monitor className="w-4 h-4" />
+              操作系统
+            </span>
+            <div className="flex items-center gap-2">
+              <span>{getPlatformIcon(systemInfo.platform)}</span>
+              <span className="text-sm font-medium">{formatPlatform(systemInfo.platform)}</span>
+            </div>
           </div>
-          <div className="info-item">
-            <span className="info-label">系统架构</span>
-            <span className="info-value">{systemInfo.arch}</span>
+
+          <div className="flex items-center justify-between py-2 border-b">
+            <span className="text-sm text-muted-foreground flex items-center gap-2">
+              <Cpu className="w-4 h-4" />
+              系统架构
+            </span>
+            <span className="text-sm font-medium">{systemInfo.arch}</span>
           </div>
-          <div className="info-item">
-            <span className="info-label">主机名</span>
-            <span className="info-value">{systemInfo.hostname}</span>
+
+          <div className="flex items-center justify-between py-2 border-b">
+            <span className="text-sm text-muted-foreground flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              主机名
+            </span>
+            <span className="text-sm font-medium font-mono">{systemInfo.hostname}</span>
           </div>
-          <div className="info-item">
-            <span className="info-label">系统版本</span>
-            <span className="info-value">{formatVersion(systemInfo.version)}</span>
+
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-muted-foreground flex items-center gap-2">
+              <Info className="w-4 h-4" />
+              系统版本
+            </span>
+            <span className="text-sm font-medium">{formatVersion(systemInfo.version)}</span>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

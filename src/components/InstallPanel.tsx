@@ -6,6 +6,22 @@
 
 import React, { useState, useEffect } from 'react'
 import { useOpenClaw } from '../hooks/useOpenClaw'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Spinner } from '@/components/ui/spinner'
+import { 
+  Download, 
+  Trash2, 
+  Zap, 
+  Package, 
+  AlertTriangle,
+  CheckCircle2,
+  Terminal,
+  Info
+} from 'lucide-react'
 
 interface InstallPanelProps {
   installStatus: {
@@ -99,11 +115,9 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, 
    */
   const getScriptCommand = (): string => {
     if (systemInfo?.platform === 'win32') {
-      return 'npm install -g openclaw' +
-        '\n\n⚡ 使用内置环境，无需预先安装 Node.js'
+      return 'npm install -g openclaw'
     } else {
-      return 'curl -fsSL https://get.openclaw.app/script/mac | sh' +
-        '\n\n⚡ macOS 推荐使用 npm 方式'
+      return 'curl -fsSL https://get.openclaw.app/script/mac | sh'
     }
   }
 
@@ -111,12 +125,10 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, 
    * 安装 OpenClaw
    */
   const handleInstall = async () => {
-    setInstallOutput('') // 清空之前的输出
+    setInstallOutput('')
     const result = await installOpenClaw(selectedInstallMethod)
 
-    // 如果安装成功，显示成功消息
     if (result.success) {
-      // 如果后端返回了安装信息，直接显示
       if (result.installed && result.version) {
         setInstallOutput(prev => prev + `\n\n🎉 安装成功！版本: ${result.version}`)
       } else {
@@ -137,12 +149,11 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, 
     }
 
     setShowUninstallConfirm(false)
-    setUninstallOutput('') // 清空之前的输出
+    setUninstallOutput('')
 
     try {
       const result = await uninstallOpenClaw(selectedUninstallLevel)
 
-      // 如果卸载成功，显示成功消息
       if (result.success) {
         setUninstallOutput(prev => prev + '\n\n✅ 卸载完成！正在刷新状态...')
       } else if (result.output) {
@@ -162,304 +173,323 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, 
   }
 
   return (
-    <div className="card">
-      {/* 卡片头部 */}
-      <div className="card-header">
-        <div className="icon-container">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
           {installStatus.installed ? (
-            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <>
+              <Trash2 className="w-5 h-5" />
+              卸载 OpenClaw
+            </>
           ) : (
-            <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
+            <>
+              <Download className="w-5 h-5" />
+              安装 OpenClaw
+            </>
           )}
-        </div>
-        <div>
-          <div className="card-title">
-            {installStatus.installed ? '卸载 OpenClaw' : '安装 OpenClaw'}
-          </div>
-          <div className="card-subtitle">
-            {installStatus.installed ? '从系统中移除 OpenClaw' : '在当前系统上安装 OpenClaw'}
-          </div>
-        </div>
-      </div>
+        </CardTitle>
+        <CardDescription>
+          {installStatus.installed ? '从系统中移除 OpenClaw' : '在当前系统上安装 OpenClaw'}
+        </CardDescription>
+      </CardHeader>
 
-      {/* 卡片内容 */}
-      <div className="card-body">
+      <CardContent>
         {!installStatus.installed ? (
-          /* 未安装状态 - 显示安装面板 */
+          /* 安装面板 */
           <div className="space-y-6">
             {/* 系统提示 */}
             {systemInfo && (
-              <div className="p-4 rounded-lg bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
-                <div className="flex items-start gap-3">
-                  <div className="text-2xl">💡</div>
-                  <div>
-                    <div className="font-semibold text-blue-400 mb-1">
-                      检测到 {formatPlatform(systemInfo.platform)} 系统
-                    </div>
-                    <div className="text-sm text-white/60">
-                      {hasNpm
-                        ? `检测到已安装 npm v${npmVersion}，可选择 npm 方式快速安装`
-                        : systemInfo.platform === 'win32'
-                        ? '一键安装无需预先安装 Node.js，自动准备运行环境，适合新手'
-                        : '一键安装会自动安装 Node.js 和 npm，适合新手'
-                      }
-                    </div>
+              <Alert>
+                <Info className="w-4 h-4" />
+                <AlertDescription>
+                  <div className="font-semibold mb-1">
+                    检测到 {formatPlatform(systemInfo.platform)} 系统
                   </div>
-                </div>
-              </div>
+                  <div className="text-sm text-muted-foreground">
+                    {hasNpm
+                      ? `检测到已安装 npm v${npmVersion}，可选择 npm 方式快速安装`
+                      : systemInfo.platform === 'win32'
+                      ? '一键安装无需预先安装 Node.js，自动准备运行环境，适合新手'
+                      : '一键安装会自动安装 Node.js 和 npm，适合新手'
+                    }
+                  </div>
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* 安装方式选择 */}
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-white/70 mb-3">选择安装方式</div>
-              <div className="space-y-3">
-                {/* 一键安装（Windows: PowerShell脚本 / macOS: curl） */}
-                <div
-                  className={`install-method-card ${selectedInstallMethod === 'script' ? 'selected' : ''}`}
-                  onClick={() => setSelectedInstallMethod('script')}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="install-method-title">
-                      <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <span>{systemInfo?.platform === 'win32' ? '内置环境安装' : '一键安装'}</span>
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">选择安装方式</h3>
+              <RadioGroup value={selectedInstallMethod} onValueChange={(value: any) => setSelectedInstallMethod(value)}>
+                <div className="space-y-3">
+                  {/* 一键安装 */}
+                  <label 
+                    htmlFor="script"
+                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedInstallMethod === 'script' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="script" id="script" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="w-4 h-4 text-blue-500" />
+                        <span className="font-semibold">
+                          {systemInfo?.platform === 'win32' ? '内置环境安装' : '一键安装'}
+                        </span>
+                        {!hasNpm && selectedInstallMethod === 'script' && (
+                          <Badge variant="secondary">推荐</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {systemInfo?.platform === 'win32'
+                          ? '无网络依赖安装，自动准备运行环境，适合新手'
+                          : '使用 curl 安装脚本（自动安装 Node.js 和 npm）'
+                        }
+                      </p>
+                      <code className="text-xs px-2 py-1 rounded bg-muted font-mono">
+                        {getScriptCommand()}
+                      </code>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!hasNpm && selectedInstallMethod === 'script' && (
-                        <span className="text-blue-400">⭐ 推荐</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="install-method-desc">
-                    {systemInfo?.platform === 'win32'
-                      ? '无网络依赖安装，自动准备运行环境，适合新手'
-                      : '使用 curl 安装脚本（自动安装 Node.js 和 npm）'
-                    }
-                  </div>
-                  <code className="install-method-tag">
-                    {getScriptCommand()}
-                  </code>
-                </div>
+                  </label>
 
-                {/* npm 安装 */}
-                <div
-                  className={`install-method-card ${selectedInstallMethod === 'npm' ? 'selected' : ''}`}
-                  onClick={() => setSelectedInstallMethod('npm')}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="install-method-title">
-                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
-                      <span>npm 安装</span>
+                  {/* npm 安装 */}
+                  <label 
+                    htmlFor="npm"
+                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedInstallMethod === 'npm' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="npm" id="npm" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Package className="w-4 h-4 text-green-500" />
+                        <span className="font-semibold">npm 安装</span>
+                        {selectedInstallMethod === 'npm' && hasNpm && (
+                          <Badge variant="success">推荐</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {hasNpm
+                          ? `系统已安装 npm v${npmVersion}，使用此方式快速安装`
+                          : '需要系统已安装 Node.js 和 npm。如果未安装，请先安装 Node.js'
+                        }
+                      </p>
+                      <code className="text-xs px-2 py-1 rounded bg-muted font-mono">
+                        npm install -g openclaw
+                      </code>
                     </div>
-                    {selectedInstallMethod === 'npm' && hasNpm && (
-                      <span className="text-green-400">⭐ 推荐</span>
-                    )}
-                  </div>
-                  <div className="install-method-desc">
-                    {hasNpm
-                      ? `系统已安装 npm v${npmVersion}，使用此方式快速安装`
-                      : '需要系统已安装 Node.js 和 npm。如果未安装，请先安装 Node.js'
-                    }
-                  </div>
-                  <code className="install-method-tag">
-                    npm install -g openclaw
-                  </code>
-                </div>
+                  </label>
 
-                {/* pnpm 安装 */}
-                <div
-                  className={`install-method-card ${selectedInstallMethod === 'pnpm' ? 'selected' : ''}`}
-                  onClick={() => setSelectedInstallMethod('pnpm')}
-                >
-                  <div className="install-method-title">
-                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span>pnpm 全局安装</span>
-                  </div>
-                  <div className="install-method-desc">
-                    通过 pnpm 包管理器安装，速度更快，占用空间更小
-                  </div>
-                  <code className="install-method-tag">
-                    pnpm i -g openclaw
-                  </code>
+                  {/* pnpm 安装 */}
+                  <label 
+                    htmlFor="pnpm"
+                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedInstallMethod === 'pnpm' 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <RadioGroupItem value="pnpm" id="pnpm" className="mt-1" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Package className="w-4 h-4 text-purple-500" />
+                        <span className="font-semibold">pnpm 全局安装</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        通过 pnpm 包管理器安装，速度更快，占用空间更小
+                      </p>
+                      <code className="text-xs px-2 py-1 rounded bg-muted font-mono">
+                        pnpm i -g openclaw
+                      </code>
+                    </div>
+                  </label>
                 </div>
-              </div>
+              </RadioGroup>
             </div>
 
             {/* 安装按钮 */}
-            <button
-              onClick={handleInstall}
+            <Button 
+              onClick={handleInstall} 
               disabled={loading}
-              className={`btn btn-primary w-full ${loading ? 'cursor-not-allowed' : ''}`}
+              className="w-full"
+              size="lg"
             >
               {loading ? (
                 <>
-                  <div className="spinner" />
-                  <span>安装中...</span>
+                  <Spinner className="mr-2" />
+                  安装中...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  <span>开始安装</span>
+                  <Download className="w-4 h-4 mr-2" />
+                  开始安装
                 </>
               )}
-            </button>
+            </Button>
 
             {/* 安装输出 */}
             {installOutput && (
               <div>
-                <div className="text-sm font-semibold text-white/70 mb-2">安装输出</div>
-                <div className="terminal-output">{installOutput}</div>
+                <h3 className="text-sm font-semibold mb-2">安装输出</h3>
+                <pre className="p-4 rounded-lg bg-muted text-xs font-mono overflow-auto max-h-60 border">
+                  {installOutput}
+                </pre>
               </div>
             )}
           </div>
         ) : (
-          /* 已安装状态 - 显示卸载面板 */
+          /* 卸载面板 */
           <div className="space-y-6">
             {/* 卸载警告 */}
-            <div className="p-4 rounded-lg bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20">
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">⚠️</div>
-                <div>
-                  <div className="font-semibold text-red-400 mb-1">警告</div>
-                  <div className="text-sm text-white/60">
-                    卸载将删除 OpenClaw 相关的文件和数据。请根据需要选择卸载级别。
-                  </div>
+            <Alert variant="destructive">
+              <AlertTriangle className="w-4 h-4" />
+              <AlertDescription>
+                <div className="font-semibold mb-1">警告</div>
+                <div className="text-sm">
+                  卸载将删除 OpenClaw 相关的文件和数据。请根据需要选择卸载级别。
                 </div>
-              </div>
-            </div>
+              </AlertDescription>
+            </Alert>
 
             {/* 卸载级别选择 */}
-            <div className="space-y-3">
-              <div className="text-sm font-semibold text-white/70 mb-3">选择卸载级别</div>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  className={`install-method-card ${selectedUninstallLevel === 'service' ? 'selected' : ''}`}
-                  onClick={() => setSelectedUninstallLevel('service')}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">选择卸载级别</h3>
+              <RadioGroup 
+                value={selectedUninstallLevel} 
+                onValueChange={(value: any) => setSelectedUninstallLevel(value)}
+                className="grid grid-cols-2 gap-3"
+              >
+                {/* 仅卸载服务 */}
+                <label 
+                  htmlFor="service"
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
+                    selectedUninstallLevel === 'service' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
                 >
-                  <div className="install-method-title">
-                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>仅卸载服务</span>
-                  </div>
-                  <div className="install-method-desc">保留配置和数据</div>
-                  <span className="install-method-tag">轻</span>
-                </button>
+                  <RadioGroupItem value="service" id="service" className="sr-only" />
+                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                  <div className="font-semibold">仅卸载服务</div>
+                  <div className="text-xs text-muted-foreground">保留配置和数据</div>
+                  <Badge variant="success">轻</Badge>
+                </label>
 
-                <button
-                  className={`install-method-card ${selectedUninstallLevel === 'state' ? 'selected' : ''}`}
-                  onClick={() => setSelectedUninstallLevel('state')}
+                {/* 删除状态数据 */}
+                <label 
+                  htmlFor="state"
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
+                    selectedUninstallLevel === 'state' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
                 >
-                  <div className="install-method-title">
-                    <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span>删除状态数据</span>
-                  </div>
-                  <div className="install-method-desc">删除状态和配置</div>
-                  <span className="install-method-tag">中</span>
-                </button>
+                  <RadioGroupItem value="state" id="state" className="sr-only" />
+                  <AlertTriangle className="w-6 h-6 text-orange-500" />
+                  <div className="font-semibold">删除状态数据</div>
+                  <div className="text-xs text-muted-foreground">删除状态和配置</div>
+                  <Badge variant="warning">中</Badge>
+                </label>
 
-                <button
-                  className={`install-method-card ${selectedUninstallLevel === 'workspace' ? 'selected' : ''}`}
-                  onClick={() => setSelectedUninstallLevel('workspace')}
+                {/* 删除工作区 */}
+                <label 
+                  htmlFor="workspace"
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
+                    selectedUninstallLevel === 'workspace' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
                 >
-                  <div className="install-method-title">
-                    <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span>删除工作区</span>
-                  </div>
-                  <div className="install-method-desc">包括你的数据</div>
-                  <span className="install-method-tag">重</span>
-                </button>
+                  <RadioGroupItem value="workspace" id="workspace" className="sr-only" />
+                  <Trash2 className="w-6 h-6 text-red-500" />
+                  <div className="font-semibold">删除工作区</div>
+                  <div className="text-xs text-muted-foreground">包括你的数据</div>
+                  <Badge variant="destructive">重</Badge>
+                </label>
 
-                <button
-                  className={`install-method-card ${selectedUninstallLevel === 'all' ? 'selected' : ''}`}
-                  onClick={() => setSelectedUninstallLevel('all')}
+                {/* 完全卸载 */}
+                <label 
+                  htmlFor="all"
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
+                    selectedUninstallLevel === 'all' 
+                      ? 'border-primary bg-primary/5' 
+                      : 'border-border hover:border-primary/50'
+                  }`}
                 >
-                  <div className="install-method-title">
-                    <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span>完全卸载</span>
-                  </div>
-                  <div className="install-method-desc">彻底删除所有</div>
-                  <span className="install-method-tag">彻底</span>
-                </button>
-              </div>
+                  <RadioGroupItem value="all" id="all" className="sr-only" />
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                  <div className="font-semibold">完全卸载</div>
+                  <div className="text-xs text-muted-foreground">彻底删除所有</div>
+                  <Badge variant="destructive">彻底</Badge>
+                </label>
+              </RadioGroup>
             </div>
 
             {/* 卸载按钮 */}
             {showUninstallConfirm ? (
-              /* 确认卸载 */
-              <div className="btn-group">
-                <button
+              <div className="flex gap-3">
+                <Button 
                   onClick={cancelUninstall}
-                  className="btn btn-secondary"
+                  variant="outline"
+                  className="flex-1"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button 
                   onClick={handleUninstall}
                   disabled={loading}
-                  className={`btn btn-danger ${loading ? 'cursor-not-allowed' : ''}`}
+                  variant="destructive"
+                  className="flex-1"
                 >
                   {loading ? (
                     <>
-                      <div className="spinner" />
-                      <span>卸载中...</span>
+                      <Spinner className="mr-2" />
+                      卸载中...
                     </>
                   ) : (
                     '确认卸载'
                   )}
-                </button>
+                </Button>
               </div>
             ) : (
-              /* 显示卸载按钮 */
-              <button
+              <Button 
                 onClick={handleUninstall}
                 disabled={loading}
-                className={`btn btn-danger w-full ${loading ? 'cursor-not-allowed' : ''}`}
+                variant="destructive"
+                className="w-full"
+                size="lg"
               >
                 {loading ? (
                   <>
-                    <div className="spinner" />
-                    <span>卸载中...</span>
+                    <Spinner className="mr-2" />
+                    卸载中...
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span>卸载 OpenClaw</span>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    卸载 OpenClaw
                   </>
                 )}
-              </button>
+              </Button>
             )}
 
             {/* 卸载输出 */}
             {uninstallOutput && (
               <div>
-                <div className="text-sm font-semibold text-white/70 mb-2">卸载输出</div>
-                <div className="terminal-output">{uninstallOutput}</div>
+                <h3 className="text-sm font-semibold mb-2">卸载输出</h3>
+                <pre className="p-4 rounded-lg bg-muted text-xs font-mono overflow-auto max-h-60 border">
+                  {uninstallOutput}
+                </pre>
               </div>
             )}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
