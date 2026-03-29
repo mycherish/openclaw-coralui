@@ -4,7 +4,7 @@
  * 负责：显示安装/卸载面板
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useOpenClaw } from '../hooks/useOpenClaw'
 
 interface InstallPanelProps {
@@ -19,9 +19,10 @@ interface InstallPanelProps {
     hostname: string
     version: string
   } | null
+  onRefresh?: () => void
 }
 
-const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }) => {
+const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, onRefresh }) => {
   const { installOpenClaw, uninstallOpenClaw, loading } = useOpenClaw()
 
   // 安装方法选择
@@ -39,6 +40,51 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
   // 确认卸载
   const [showUninstallConfirm, setShowUninstallConfirm] = useState(false)
 
+  // 检测是否已安装 npm
+  const [hasNpm, setHasNpm] = useState<boolean>(false)
+  const [npmVersion, setNpmVersion] = useState<string>('')
+
+  // 监听实时安装输出
+  useEffect(() => {
+    window.electron.onInstallOutput((data) => {
+      setInstallOutput(prev => prev + data)
+    })
+
+    return () => {
+      window.electron.removeInstallOutputListener()
+    }
+  }, [])
+
+  // 检测 npm 是否已安装
+  useEffect(() => {
+    const checkNpm = async () => {
+      if (systemInfo?.platform) {
+        try {
+          const npmCmd = systemInfo.platform === 'win32' ? 'npm.cmd' : 'npm'
+          const result = await window.electron.executeCommand(`${npmCmd} --version`)
+          if (result.success && result.output) {
+            setHasNpm(true)
+            setNpmVersion(result.output.trim())
+          }
+        } catch (error) {
+          setHasNpm(false)
+        }
+      }
+    }
+    checkNpm()
+  }, [systemInfo])
+
+  // 监听实时卸载输出
+  useEffect(() => {
+    window.electron.onUninstallOutput((data) => {
+      setUninstallOutput(prev => prev + data)
+    })
+
+    return () => {
+      window.electron.removeUninstallOutputListener()
+    }
+  }, [])
+
   /**
    * 格式化系统平台名称
    */
@@ -55,12 +101,12 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
    * 获取当前平台的一键脚本命令
    */
   const getScriptCommand = (): string => {
-    const platform = window.electron.getPlatform()
-    if (platform === 'win32') {
-      return 'irm https://openclaw.ai/install.ps1 | iex' +
-        '\n\n⚠️ Windows用户需要以管理员身份运行PowerShell'
+    if (systemInfo?.platform === 'win32') {
+      return 'npm install -g openclaw' +
+        '\n\n⚡ 使用内置环境，无需预先安装 Node.js'
     } else {
-      return 'curl -fsSL https://openclaw.ai/install.sh | bash'
+      return 'curl -fsSL https://get.openclaw.app/script/mac | sh' +
+        '\n\n⚡ macOS 推荐使用 npm 方式'
     }
   }
 
@@ -68,9 +114,20 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
    * 安装 OpenClaw
    */
   const handleInstall = async () => {
-    setInstallOutput('正在安装...')
+    setInstallOutput('') // 清空之前的输出
     const result = await installOpenClaw(selectedInstallMethod)
-    setInstallOutput(result.output)
+
+    // 如果安装成功，显示成功消息
+    if (result.success) {
+      // 如果后端返回了安装信息，直接显示
+      if (result.installed && result.version) {
+        setInstallOutput(prev => prev + `\n\n🎉 安装成功！版本: ${result.version}`)
+      } else {
+        setInstallOutput(prev => prev + '\n\n✅ 安装完成！')
+      }
+    } else if (result.output) {
+      setInstallOutput(prev => prev + '\n' + result.output)
+    }
   }
 
   /**
@@ -83,11 +140,17 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
     }
 
     setShowUninstallConfirm(false)
-    setUninstallOutput('正在卸载...')
+    setUninstallOutput('') // 清空之前的输出
 
     try {
       const result = await uninstallOpenClaw(selectedUninstallLevel)
-      setUninstallOutput(result.output)
+
+      // 如果卸载成功，显示成功消息
+      if (result.success) {
+        setUninstallOutput(prev => prev + '\n\n✅ 卸载完成！正在刷新状态...')
+      } else if (result.output) {
+        setUninstallOutput(prev => prev + '\n' + result.output)
+      }
     } catch (error) {
       setUninstallOutput(`卸载失败: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -141,7 +204,12 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
                       检测到 {formatPlatform(systemInfo.platform)} 系统
                     </div>
                     <div className="text-sm text-white/60">
-                      请选择一种安装方式。推荐使用一键脚本，最快最简单。
+                      {hasNpm
+                        ? `检测到已安装 npm v${npmVersion}，可选择 npm 方式快速安装`
+                        : systemInfo.platform === 'win32'
+                        ? '一键安装无需预先安装 Node.js，自动准备运行环境，适合新手'
+                        : '一键安装会自动安装 Node.js 和 npm，适合新手'
+                      }
                     </div>
                   </div>
                 </div>
@@ -152,7 +220,7 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
             <div className="space-y-3">
               <div className="text-sm font-semibold text-white/70 mb-3">选择安装方式</div>
               <div className="space-y-3">
-                {/* 一键脚本 */}
+                {/* 一键安装（Windows: PowerShell脚本 / macOS: curl） */}
                 <div
                   className={`install-method-card ${selectedInstallMethod === 'script' ? 'selected' : ''}`}
                   onClick={() => setSelectedInstallMethod('script')}
@@ -162,14 +230,19 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
                       <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <span>一键脚本</span>
+                      <span>{systemInfo?.platform === 'win32' ? '内置环境安装' : '一键安装'}</span>
                     </div>
-                    {selectedInstallMethod === 'script' && (
-                      <span className="text-blue-400">⭐ 推荐</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {!hasNpm && selectedInstallMethod === 'script' && (
+                        <span className="text-blue-400">⭐ 推荐</span>
+                      )}
+                    </div>
                   </div>
                   <div className="install-method-desc">
-                    最快速最简单的安装方式，自动处理所有依赖
+                    {systemInfo?.platform === 'win32'
+                      ? '无网络依赖安装，自动准备运行环境，适合新手'
+                      : '使用 curl 安装脚本（自动安装 Node.js 和 npm）'
+                    }
                   </div>
                   <code className="install-method-tag">
                     {getScriptCommand()}
@@ -181,17 +254,25 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }
                   className={`install-method-card ${selectedInstallMethod === 'npm' ? 'selected' : ''}`}
                   onClick={() => setSelectedInstallMethod('npm')}
                 >
-                  <div className="install-method-title">
-                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    <span>npm 全局安装</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="install-method-title">
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                      <span>npm 安装</span>
+                    </div>
+                    {selectedInstallMethod === 'npm' && hasNpm && (
+                      <span className="text-green-400">⭐ 推荐</span>
+                    )}
                   </div>
                   <div className="install-method-desc">
-                    通过 npm 包管理器安装，适合熟悉 Node.js 的开发者
+                    {hasNpm
+                      ? `系统已安装 npm v${npmVersion}，使用此方式快速安装`
+                      : '需要系统已安装 Node.js 和 npm。如果未安装，请先安装 Node.js'
+                    }
                   </div>
                   <code className="install-method-tag">
-                    npm i -g openclaw
+                    npm install -g openclaw
                   </code>
                 </div>
 

@@ -79,8 +79,47 @@ async function verify() {
     // 1. 显示系统信息
     console.log('📋 系统信息:')
     console.log(`  平台: ${os.platform()}`)
-    console.log(`  架构: ${os.arch()}`)
-    console.log(`  主机名: ${os.hostname()}`)
+    
+    // 检测真实硬件架构
+    let arch = os.arch()
+    const processorIdentifier = process.env.PROCESSOR_IDENTIFIER || ''
+    const processorArch = process.env.PROCESSOR_ARCHITECTURE || ''
+    
+    console.log(`  Node.js 报告架构: ${arch}`)
+    console.log(`  PROCESSOR_IDENTIFIER: ${processorIdentifier}`)
+    console.log(`  PROCESSOR_ARCHITECTURE: ${processorArch}`)
+    
+    // 检查是否是 ARM64 硬件
+    const isArmHardware = processorIdentifier.toLowerCase().includes('arm') ||
+                         processorIdentifier.toLowerCase().includes('armv8') ||
+                         processorIdentifier.toLowerCase().includes('aarch64')
+    
+    const isArmArch = processorArch.toLowerCase() === 'arm64' ||
+                     processorArch.toLowerCase() === 'aarch64'
+    
+    if (isArmHardware || isArmArch) {
+      console.log(`\n🔍 检测到 ARM64 硬件架构`)
+      console.log(`  真实硬件: ARM64`)
+      console.log(`  Node.js 运行模式: ${arch === 'x64' ? 'x64 兼容模式' : '原生 ARM64'}`)
+      console.log(`  💡 提示: 如需构建 ARM64 版本，请设置 FORCE_ARCH=arm64`)
+    }
+    // 检测 M芯片 Mac Windows 虚拟机
+    else {
+      const hostname = os.hostname().toLowerCase()
+      const isLikelyAppleSiliconVM = os.platform() === 'win32' && (
+        hostname.includes('mac') || 
+        hostname.includes('apple') ||
+        process.env.APPLE_SILICON_VM === 'true' ||
+        process.env.MAC_ARM_WINDOWS_VM === 'true'
+      )
+      
+      if (isLikelyAppleSiliconVM && arch === 'x64') {
+        console.log(`\n🔍 检测到 M芯片 Mac Windows 虚拟机环境`)
+        console.log(`  实际硬件为 ARM64 (Apple Silicon)`)
+      }
+    }
+    
+    console.log(`\n  主机名: ${os.hostname()}`)
     console.log(`  Shell: ${process.env.SHELL || '/bin/zsh'}`)
     console.log()
 

@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs').promises;
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const SVG_FILE = path.join(PROJECT_ROOT, 'build/logo.svg');
+const SVG_FILE = path.join(PROJECT_ROOT, 'public/assets/logo.svg');
 const BUILD_DIR = path.join(PROJECT_ROOT, 'build');
 
 // 需要生成的尺寸
@@ -62,18 +62,28 @@ async function generateIcons() {
   const icoFile = path.join(BUILD_DIR, 'icon.ico');
   
   try {
-    // 使用 png-to-ico 或直接使用 sharp 生成
-    // 这里我们生成一个 256x256 的 PNG 作为 .ico
-    await sharp(SVG_FILE)
-      .resize(256, 256)
-      .png()
-      .toFile(icoFile.replace('.ico', '-temp.png'));
+    const pngToIcoModule = require('png-to-ico');
+    const pngToIco = pngToIcoModule.default || pngToIcoModule.imagesToIco;
     
-    // 重命名为 .ico (electron-builder 可以处理)
-    await fs.rename(icoFile.replace('.ico', '-temp.png'), icoFile);
+    // 生成多个尺寸的 PNG 用于 ICO
+    const icoSizes = [16, 32, 48, 64, 128, 256];
+    const pngBuffers = await Promise.all(
+      icoSizes.map(size => 
+        sharp(SVG_FILE)
+          .resize(size, size)
+          .png()
+          .toBuffer()
+      )
+    );
+    
+    // 将所有 PNG 合并成一个 ICO 文件
+    const icoBuffer = await pngToIco(pngBuffers);
+    await fs.writeFile(icoFile, icoBuffer);
+    
     console.log(`  ✅ 生成 Windows 图标: ${icoFile}\n`);
   } catch (err) {
     console.error('  ❌ 生成 .ico 失败:', err.message);
+    console.error('  ℹ️  请确保已安装 png-to-ico: npm install --save-dev png-to-ico\n');
   }
 
   // macOS: 生成 .icns 需要特殊工具，这里生成所需的 PNG

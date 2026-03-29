@@ -58,6 +58,7 @@ const App: React.FC = () => {
             <InstallPanel
               installStatus={installStatus}
               systemInfo={systemInfo}
+              onRefresh={refreshAll}
             />
           </div>
 

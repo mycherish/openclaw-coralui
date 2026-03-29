@@ -41,6 +41,20 @@ contextBridge.exposeInMainWorld('electron', {
   installOpenClaw: (method) => ipcRenderer.invoke('install-openclaw', method),
 
   /**
+   * 监听安装实时输出
+   */
+  onInstallOutput: (callback) => {
+    ipcRenderer.on('install-output', (event, data) => callback(data))
+  },
+
+  /**
+   * 移除安装输出监听
+   */
+  removeInstallOutputListener: () => {
+    ipcRenderer.removeAllListeners('install-output')
+  },
+
+  /**
    * 启动 Gateway
    */
   startGateway: () => ipcRenderer.invoke('start-gateway'),
@@ -61,6 +75,20 @@ contextBridge.exposeInMainWorld('electron', {
   uninstallOpenClaw: (level) => ipcRenderer.invoke('uninstall-openclaw', level),
 
   /**
+   * 监听卸载实时输出
+   */
+  onUninstallOutput: (callback) => {
+    ipcRenderer.on('uninstall-output', (event, data) => callback(data))
+  },
+
+  /**
+   * 移除卸载输出监听
+   */
+  removeUninstallOutputListener: () => {
+    ipcRenderer.removeAllListeners('uninstall-output')
+  },
+
+  /**
    * 获取日志
    */
   getLogs: () => ipcRenderer.invoke('get-logs'),
@@ -78,5 +106,10 @@ contextBridge.exposeInMainWorld('electron', {
   /**
    * 获取渠道状态
    */
-  getChannelsStatus: () => ipcRenderer.invoke('get-channels-status')
+  getChannelsStatus: () => ipcRenderer.invoke('get-channels-status'),
+
+  /**
+   * 执行命令
+   */
+  executeCommand: (command) => ipcRenderer.invoke('execute-command', command)
 })

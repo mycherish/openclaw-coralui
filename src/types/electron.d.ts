@@ -53,6 +53,16 @@ export interface ElectronAPI {
   }>
 
   /**
+   * 监听安装实时输出
+   */
+  onInstallOutput(callback: (data: string) => void): void
+
+  /**
+   * 移除安装输出监听
+   */
+  removeInstallOutputListener(): void
+
+  /**
    * 启动 Gateway
    */
   startGateway(): Promise<{
@@ -83,6 +93,16 @@ export interface ElectronAPI {
     success: boolean
     output: string
   }>
+
+  /**
+   * 监听卸载实时输出
+   */
+  onUninstallOutput(callback: (data: string) => void): void
+
+  /**
+   * 移除卸载输出监听
+   */
+  removeUninstallOutputListener(): void
 
   /**
    * 获取日志

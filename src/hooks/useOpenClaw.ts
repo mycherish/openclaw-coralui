@@ -76,6 +76,8 @@ interface ChannelsStatus {
 interface OperationResult {
   success: boolean
   output: string
+  installed?: boolean
+  version?: string
 }
 
 export const useOpenClaw = () => {
@@ -244,6 +246,39 @@ export const useOpenClaw = () => {
   }, [])
 
   /**
+   * 初始化：获取所有状态
+   */
+  const initialize = useCallback(async () => {
+    await getSystemInfo()
+    const installInfo = await checkInstallStatus()
+    if (installInfo && installInfo.installed) {
+      await getGatewayStatus()
+      await getHealthStatus()
+      await getNodesStatus()
+      await getModelsStatus()
+      await getChannelsStatus()
+      await getLogs()
+    }
+  }, [getSystemInfo, checkInstallStatus, getGatewayStatus, getHealthStatus, getNodesStatus, getModelsStatus, getChannelsStatus, getLogs])
+
+  /**
+   * 刷新所有状态
+   */
+  const refreshAll = useCallback(async () => {
+    await checkInstallStatus()
+    if (installStatus.installed) {
+      await Promise.all([
+        getGatewayStatus(),
+        getHealthStatus(),
+        getNodesStatus(),
+        getModelsStatus(),
+        getChannelsStatus(),
+        getLogs()
+      ])
+    }
+  }, [checkInstallStatus, installStatus.installed, getGatewayStatus, getHealthStatus, getNodesStatus, getModelsStatus, getChannelsStatus, getLogs])
+
+  /**
    * 安装 OpenClaw
    */
   const installOpenClaw = useCallback(async (method: 'script' | 'npm' | 'pnpm'): Promise<OperationResult> => {
@@ -251,9 +286,10 @@ export const useOpenClaw = () => {
       setLoading(true)
       const result = await window.electron.installOpenClaw(method)
 
-      // 安装后重新检查状态
+      // 安装后重新初始化所有状态
       if (result.success) {
-        await new Promise(resolve => setTimeout(resolve, 2000)) // 等待 2 秒
+        // 如果后端已经验证了安装，直接刷新状态
+        await new Promise(resolve => setTimeout(resolve, 500))
         await checkInstallStatus()
       }
 
@@ -355,11 +391,10 @@ export const useOpenClaw = () => {
       setLoading(true)
       const result = await window.electron.uninstallOpenClaw(level)
 
-      // 卸载后重新检查状态
+      // 卸载后重新初始化所有状态
       if (result.success) {
         await new Promise(resolve => setTimeout(resolve, 2000)) // 等待 2 秒
-        await checkInstallStatus()
-        await getGatewayStatus()
+        await initialize() // 重新初始化所有状态
       }
 
       return result
@@ -372,40 +407,7 @@ export const useOpenClaw = () => {
     } finally {
       setLoading(false)
     }
-  }, [checkInstallStatus, getGatewayStatus])
-
-  /**
-   * 初始化：获取所有状态
-   */
-  const initialize = useCallback(async () => {
-    await getSystemInfo()
-    const installInfo = await checkInstallStatus()
-    if (installInfo && installInfo.installed) {
-      await getGatewayStatus()
-      await getHealthStatus()
-      await getNodesStatus()
-      await getModelsStatus()
-      await getChannelsStatus()
-      await getLogs()
-    }
-  }, [getSystemInfo, checkInstallStatus, getGatewayStatus, getHealthStatus, getNodesStatus, getModelsStatus, getChannelsStatus, getLogs])
-
-  /**
-   * 刷新所有状态
-   */
-  const refreshAll = useCallback(async () => {
-    await checkInstallStatus()
-    if (installStatus.installed) {
-      await Promise.all([
-        getGatewayStatus(),
-        getHealthStatus(),
-        getNodesStatus(),
-        getModelsStatus(),
-        getChannelsStatus(),
-        getLogs()
-      ])
-    }
-  }, [checkInstallStatus, installStatus.installed, getGatewayStatus, getHealthStatus, getNodesStatus, getModelsStatus, getChannelsStatus, getLogs])
+  }, [initialize])
 
   // 初始化
   useEffect(() => {
