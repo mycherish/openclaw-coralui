@@ -58,17 +58,14 @@ const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, 
   // 检测 npm 是否已安装
   useEffect(() => {
     const checkNpm = async () => {
-      if (systemInfo?.platform) {
-        try {
-          const npmCmd = systemInfo.platform === 'win32' ? 'npm.cmd' : 'npm'
-          const result = await window.electron.executeCommand(`${npmCmd} --version`)
-          if (result.success && result.output) {
-            setHasNpm(true)
-            setNpmVersion(result.output.trim())
-          }
-        } catch (error) {
-          setHasNpm(false)
+      try {
+        const result = await window.electron.checkNpmVersion()
+        if (result.success && result.output) {
+          setHasNpm(true)
+          setNpmVersion(result.output.trim())
         }
+      } catch (error) {
+        setHasNpm(false)
       }
     }
     checkNpm()

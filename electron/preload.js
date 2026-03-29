@@ -109,7 +109,12 @@ contextBridge.exposeInMainWorld('electron', {
   getChannelsStatus: () => ipcRenderer.invoke('get-channels-status'),
 
   /**
-   * 执行命令
+   * 检查 npm 版本
    */
-  executeCommand: (command) => ipcRenderer.invoke('execute-command', command)
+  checkNpmVersion: () => ipcRenderer.invoke('check-npm-version'),
+
+  /**
+   * 检查 pnpm 版本
+   */
+  checkPnpmVersion: () => ipcRenderer.invoke('check-pnpm-version')
 })

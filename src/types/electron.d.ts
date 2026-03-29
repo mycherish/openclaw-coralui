@@ -135,6 +135,22 @@ export interface ElectronAPI {
     success: boolean
     output: string
   }>
+
+  /**
+   * 检查 npm 版本
+   */
+  checkNpmVersion(): Promise<{
+    success: boolean
+    output: string
+  }>
+
+  /**
+   * 检查 pnpm 版本
+   */
+  checkPnpmVersion(): Promise<{
+    success: boolean
+    output: string
+  }>
 }
 
 declare global {

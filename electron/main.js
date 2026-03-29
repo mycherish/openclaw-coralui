@@ -911,9 +911,18 @@ ipcMain.handle('get-channels-status', async () => {
 })
 
 /**
- * 执行命令（通用）
+ * 检查 npm 版本
  */
-ipcMain.handle('execute-command', async (event, command) => {
-  return await executeCommand(command, 10000)
+ipcMain.handle('check-npm-version', async () => {
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+  return await executeCommand(`${npmCmd} --version`, 5000)
+})
+
+/**
+ * 检查 pnpm 版本
+ */
+ipcMain.handle('check-pnpm-version', async () => {
+  const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  return await executeCommand(`${pnpmCmd} --version`, 5000)
 })
 
