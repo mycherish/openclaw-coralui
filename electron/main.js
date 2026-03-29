@@ -17,6 +17,7 @@ let mainWindow = null
 /**
  * 获取用户 shell 环境变量
  * 在 macOS/Linux 上，加载 ~/.zshrc 或 ~/.bashrc
+ * 只返回必要的环境变量，避免泄露敏感信息
  */
 function getUserEnv() {
   return new Promise((resolve) => {
@@ -34,22 +35,56 @@ function getUserEnv() {
       if (code === 0 && output) {
         // 解析环境变量
         const envLines = output.split('\n').filter(line => line.includes('='))
-        const env = {}
+        const allEnv = {}
         for (const line of envLines) {
           const [key, ...valueParts] = line.split('=')
           if (key && valueParts.length > 0) {
-            env[key] = valueParts.join('=')
+            allEnv[key] = valueParts.join('=')
           }
         }
-        resolve(env)
+        
+        // 只返回必要的环境变量，避免泄露敏感信息
+        const safeEnv = {
+          PATH: allEnv.PATH || process.env.PATH || '',
+          HOME: allEnv.HOME || process.env.HOME || '',
+          USER: allEnv.USER || process.env.USER || '',
+          SHELL: allEnv.SHELL || process.env.SHELL || '',
+          TMPDIR: allEnv.TMPDIR || process.env.TMPDIR || '',
+          TEMP: allEnv.TEMP || process.env.TEMP || '',
+          TMP: allEnv.TMP || process.env.TMP || '',
+          // Node.js 相关
+          NODE_PATH: allEnv.NODE_PATH || process.env.NODE_PATH || '',
+          NVM_DIR: allEnv.NVM_DIR || process.env.NVM_DIR || '',
+          NVM_BIN: allEnv.NVM_BIN || process.env.NVM_BIN || '',
+          // npm/pnpm/yarn 相关
+          npm_config_prefix: allEnv.npm_config_prefix || '',
+          npm_config_cache: allEnv.npm_config_cache || '',
+          PNPM_HOME: allEnv.PNPM_HOME || '',
+          YARN_GLOBAL: allEnv.YARN_GLOBAL || '',
+        }
+        
+        resolve(safeEnv)
       } else {
-        // 如果失败，使用当前环境
-        resolve(process.env)
+        // 如果失败，使用当前环境（也需要过滤）
+        resolve({
+          PATH: process.env.PATH || '',
+          HOME: process.env.HOME || '',
+          USER: process.env.USER || '',
+          SHELL: process.env.SHELL || '',
+          TMPDIR: process.env.TMPDIR || '',
+          TEMP: process.env.TEMP || '',
+          TMP: process.env.TMP || '',
+        })
       }
     })
 
     loginShell.on('error', () => {
-      resolve(process.env)
+      resolve({
+        PATH: process.env.PATH || '',
+        HOME: process.env.HOME || '',
+        USER: process.env.USER || '',
+        SHELL: process.env.SHELL || '',
+      })
     })
   })
 }
