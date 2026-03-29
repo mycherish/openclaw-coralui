@@ -12,6 +12,8 @@ import InstallPanel from './components/InstallPanel'
 import GatewayPanel from './components/GatewayPanel'
 import StatusPanel from './components/StatusPanel'
 import LogsPanel from './components/LogsPanel'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Settings, Activity, Wifi, FileText } from 'lucide-react'
 
 /**
  * App 组件
@@ -62,31 +64,59 @@ const App: React.FC = () => {
             />
           </div>
 
-          {/* 主内容区 */}
+          {/* 主内容区 - 使用 Tabs */}
           <div className="main-area">
-            {/* Gateway 面板 */}
-            {installStatus.installed && (
-              <GatewayPanel
-                gatewayStatus={gatewayStatus}
-              />
-            )}
+            {installStatus.installed ? (
+              <Tabs defaultValue="gateway" className="w-full">
+                <TabsList className="w-full justify-start border-b border-white/10 rounded-none bg-transparent p-0">
+                  <TabsTrigger
+                    value="gateway"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-none rounded-none"
+                  >
+                    <Wifi className="w-4 h-4 mr-2" />
+                    Gateway
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="status"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-none rounded-none"
+                  >
+                    <Activity className="w-4 h-4 mr-2" />
+                    状态监控
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="logs"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:shadow-none rounded-none"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    系统日志
+                  </TabsTrigger>
+                </TabsList>
 
-            {/* 状态面板 */}
-            {installStatus.installed && (
-              <StatusPanel
-                healthStatus={healthStatus}
-                nodesStatus={nodesStatus}
-                modelsStatus={modelsStatus}
-                channelsStatus={channelsStatus}
-              />
-            )}
+                <TabsContent value="gateway" className="mt-0">
+                  <GatewayPanel gatewayStatus={gatewayStatus} />
+                </TabsContent>
 
-            {/* 日志面板 */}
-            {installStatus.installed && (
-              <LogsPanel
-                logs={logs}
-                loading={loading}
-              />
+                <TabsContent value="status" className="mt-0">
+                  <StatusPanel
+                    healthStatus={healthStatus}
+                    nodesStatus={nodesStatus}
+                    modelsStatus={modelsStatus}
+                    channelsStatus={channelsStatus}
+                  />
+                </TabsContent>
+
+                <TabsContent value="logs" className="mt-0">
+                  <LogsPanel logs={logs} loading={loading} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">📦</div>
+                  <h3 className="text-lg font-semibold text-white/70 mb-2">OpenClaw 未安装</h3>
+                  <p className="text-sm text-white/50">请先在左侧面板安装 OpenClaw</p>
+                </div>
+              </div>
             )}
           </div>
         </div>

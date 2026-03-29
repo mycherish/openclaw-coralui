@@ -5,7 +5,10 @@
  */
 
 import React from 'react'
+import { FileText, RefreshCw } from 'lucide-react'
 import { useOpenClaw } from '../hooks/useOpenClaw'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface LogsPanelProps {
   logs: string
@@ -37,12 +40,12 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ logs, loading }) => {
    */
   const formatLogLine = (line: string, index: number) => {
     const level = parseLogLevel(line)
-    const levelClass = {
-      'info': 'log-info',
-      'warn': 'log-warn',
-      'error': 'log-error',
-      'debug': 'log-debug'
-    }[level]
+    const levelColors = {
+      'info': 'text-blue-400',
+      'warn': 'text-orange-400',
+      'error': 'text-red-400',
+      'debug': 'text-white/50'
+    }
 
     // 提取时间戳
     const timestampMatch = line.match(/^(\d{2}:\d{2}:\d{2})/)
@@ -50,51 +53,41 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ logs, loading }) => {
     const message = timestampMatch ? line.slice(11) : line
 
     return (
-      <div key={index} className="log-entry">
-        {timestamp && <span className="log-timestamp">{timestamp}</span>}
-        <span className={levelClass}>{message}</span>
+      <div key={index} className="flex gap-2 font-mono text-xs">
+        {timestamp && <span className="text-white/40 flex-shrink-0">{timestamp}</span>}
+        <span className={levelColors[level]}>{message}</span>
       </div>
     )
   }
 
   return (
-    <div className="card">
-      {/* 卡片头部 */}
-      <div className="card-header">
-        <div className="icon-container">
-          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+    <Card className="h-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-orange-500/20 text-orange-400">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <CardTitle>系统日志</CardTitle>
+              <CardDescription>查看 OpenClaw 运行日志</CardDescription>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={getLogs}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? '刷新中' : '刷新'}
+          </Button>
         </div>
-        <div className="flex-1">
-          <div className="card-title">系统日志</div>
-          <div className="card-subtitle">查看 OpenClaw 运行日志</div>
-        </div>
-        <button
-          onClick={getLogs}
-          disabled={loading}
-          className={`btn btn-secondary ${loading ? 'cursor-not-allowed' : ''}`}
-        >
-          {loading ? (
-            <>
-              <div className="spinner" />
-              <span>刷新中</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>刷新</span>
-            </>
-          )}
-        </button>
-      </div>
+      </CardHeader>
 
-      {/* 卡片内容 */}
-      <div className="card-body p-0">
+      <CardContent className="p-0">
         {logs ? (
-          <div className="terminal-output max-h-80 overflow-y-auto">
+          <div className="bg-black/20 rounded-lg p-4 max-h-80 overflow-y-auto">
             {logs.split('\n').filter(line => line.trim()).map((line, index) =>
               formatLogLine(line, index)
             )}
@@ -105,8 +98,8 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ logs, loading }) => {
             <p className="text-white/50">暂无日志</p>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

@@ -5,6 +5,9 @@
  */
 
 import React from 'react'
+import { Activity, Cpu, Bot, Link, CheckCircle2, XCircle } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 interface StatusPanelProps {
   healthStatus: {
@@ -46,53 +49,63 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
    */
   const renderStatusCard = (
     title: string,
-    icon: string,
+    icon: React.ReactNode,
     status: boolean | null,
     output: string
   ) => (
-    <div className="card">
-      <div className="card-header">
-        <div className="icon-container">
-          <span className="text-xl">{icon}</span>
-        </div>
-        <div className="flex-1">
-          <div className="card-title">{title}</div>
-          {status !== null && (
-            <div className={`status-badge ${status ? 'running' : 'stopped'} ml-auto`}>
-              <div className={`status-dot ${status ? 'running' : 'stopped'}`} />
-              <span>{status ? '正常' : '异常'}</span>
+    <Card className="bg-white/5 border-white/10">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+              {icon}
             </div>
+            <CardTitle className="text-base">{title}</CardTitle>
+          </div>
+          {status !== null && (
+            <Badge variant={status ? 'success' : 'destructive'}>
+              {status ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  正常
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-3 h-3 mr-1" />
+                  异常
+                </>
+              )}
+            </Badge>
           )}
         </div>
-      </div>
-      <div className="card-body">
-        <div className="terminal-output text-xs">{simplifyOutput(output)}</div>
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent>
+        <pre className="text-xs text-white/70 font-mono bg-black/20 rounded-lg p-3 overflow-x-auto max-h-60">
+          {simplifyOutput(output)}
+        </pre>
+      </CardContent>
+    </Card>
   )
 
   return (
-    <div className="card">
-      {/* 卡片头部 */}
-      <div className="card-header">
-        <div className="icon-container">
-          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
+    <Card className="h-full">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <CardTitle>状态监控</CardTitle>
+            <CardDescription>查看 OpenClaw 各组件运行状态</CardDescription>
+          </div>
         </div>
-        <div>
-          <div className="card-title">状态监控</div>
-          <div className="card-subtitle">查看 OpenClaw 各组件运行状态</div>
-        </div>
-      </div>
-
-      {/* 卡片内容 */}
-      <div className="card-body">
+      </CardHeader>
+      <CardContent>
         <div className="space-y-4">
           {/* 健康状态 */}
           {healthStatus && renderStatusCard(
             '健康检查',
-            '❤️',
+            <Activity className="w-4 h-4" />,
             healthStatus.healthy,
             healthStatus.output
           )}
@@ -100,7 +113,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
           {/* 节点状态 */}
           {nodesStatus && renderStatusCard(
             '节点状态',
-            '🧩',
+            <Cpu className="w-4 h-4" />,
             nodesStatus.success,
             nodesStatus.output
           )}
@@ -108,7 +121,7 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
           {/* 模型状态 */}
           {modelsStatus && renderStatusCard(
             '模型状态',
-            '🤖',
+            <Bot className="w-4 h-4" />,
             modelsStatus.success,
             modelsStatus.output
           )}
@@ -116,13 +129,13 @@ const StatusPanel: React.FC<StatusPanelProps> = ({
           {/* 渠道状态 */}
           {channelsStatus && renderStatusCard(
             '渠道状态',
-            '🔗',
+            <Link className="w-4 h-4" />,
             channelsStatus.success,
             channelsStatus.output
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

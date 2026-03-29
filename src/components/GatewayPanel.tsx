@@ -5,7 +5,11 @@
  */
 
 import React, { useState } from 'react'
+import { Play, Square, RotateCw, Wifi } from 'lucide-react'
 import { useOpenClaw } from '../hooks/useOpenClaw'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface GatewayPanelProps {
   gatewayStatus: {
@@ -53,84 +57,83 @@ const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
   const getStatusInfo = () => {
     switch (gatewayStatus.status) {
       case 'running':
-        return { icon: '✅', text: '运行中', color: 'running' }
+        return { variant: 'success' as const, text: '运行中' }
       case 'stopped':
-        return { icon: '❌', text: '已停止', color: 'stopped' }
+        return { variant: 'secondary' as const, text: '已停止' }
       default:
-        return { icon: '⚠️', text: '未知', color: 'unknown' }
+        return { variant: 'outline' as const, text: '未知' }
     }
   }
 
   const statusInfo = getStatusInfo()
 
   return (
-    <div className="card">
-      {/* 卡片头部 */}
-      <div className="card-header">
-        <div className="icon-container">
-          <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-          </svg>
+    <Card className="h-full">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-500/20 text-green-400">
+              <Wifi className="w-5 h-5" />
+            </div>
+            <div>
+              <CardTitle>Gateway 网关</CardTitle>
+              <CardDescription>控制 OpenClaw Gateway 服务</CardDescription>
+            </div>
+          </div>
+          <Badge variant={statusInfo.variant}>
+            {statusInfo.text}
+          </Badge>
         </div>
-        <div>
-          <div className="card-title">Gateway 网关</div>
-          <div className="card-subtitle">控制 OpenClaw Gateway 服务</div>
-        </div>
-        <div className={`status-badge ${statusInfo.color} ml-auto`}>
-          <div className={`status-dot ${statusInfo.color}`} />
-          <span>{statusInfo.text}</span>
-        </div>
-      </div>
+      </CardHeader>
 
-      {/* 卡片内容 */}
-      <div className="card-body">
+      <CardContent className="space-y-4">
         {/* 控制按钮 */}
-        <div className="btn-group mb-4">
-          <button
+        <div className="flex gap-3">
+          <Button
+            variant="default"
+            size="sm"
             onClick={handleStart}
             disabled={loading || gatewayStatus.status === 'running'}
-            className={`btn btn-success ${loading || gatewayStatus.status === 'running' ? 'cursor-not-allowed opacity-50' : ''}`}
+            className="flex-1 bg-green-500 hover:bg-green-600"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>启动</span>
-          </button>
+            <Play className="w-4 h-4 mr-2" />
+            启动
+          </Button>
 
-          <button
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={handleStop}
             disabled={loading || gatewayStatus.status !== 'running'}
-            className={`btn btn-danger ${loading || gatewayStatus.status !== 'running' ? 'cursor-not-allowed opacity-50' : ''}`}
+            className="flex-1"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-            </svg>
-            <span>停止</span>
-          </button>
+            <Square className="w-4 h-4 mr-2" />
+            停止
+          </Button>
 
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRestart}
             disabled={loading || gatewayStatus.status !== 'running'}
-            className={`btn btn-primary ${loading || gatewayStatus.status !== 'running' ? 'cursor-not-allowed opacity-50' : ''}`}
+            className="flex-1"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>重启</span>
-          </button>
+            <RotateCw className="w-4 h-4 mr-2" />
+            重启
+          </Button>
         </div>
 
         {/* 操作输出 */}
         {operationOutput && (
           <div>
             <div className="text-sm font-semibold text-white/70 mb-2">操作输出</div>
-            <div className="terminal-output">{operationOutput}</div>
+            <pre className="text-xs text-white/70 font-mono bg-black/20 rounded-lg p-3 overflow-x-auto max-h-40">
+              {operationOutput}
+            </pre>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

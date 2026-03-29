@@ -5,7 +5,10 @@
  */
 
 import React from 'react'
+import { RefreshCw } from 'lucide-react'
 import Logo from './Logo'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface HeaderProps {
   systemInfo: {
@@ -47,94 +50,76 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   /**
-   * 获取状态文本和颜色类
+   * 获取状态信息
    */
   const getStatusInfo = () => {
     switch (gatewayStatus.status) {
       case 'running':
-        return { text: '运行中', color: 'running' }
+        return { text: '运行中', variant: 'success' as const }
       case 'stopped':
-        return { text: '已停止', color: 'stopped' }
+        return { text: '已停止', variant: 'secondary' as const }
       default:
-        return { text: '未知', color: 'unknown' }
+        return { text: '未知', variant: 'outline' as const }
     }
   }
 
   const statusInfo = getStatusInfo()
 
   return (
-    <header className="header">
-      <div className="header-content">
-          {/* 左侧：Logo、标题和系统信息 */}
-          <div className="header-left">
-            {/* Logo 和标题 */}
-            <div className="logo">
-              <Logo size="large" />
-              <div>
-                <h1 className="logo-text">OpenClaw CoralUI</h1>
-                <p className="text-xs text-white/40 mt-0.5">OpenClaw 图形界面管理工具</p>
-              </div>
-            </div>
-
-          {/* 垂直分隔线 */}
-          <div className="h-8 w-px bg-white/10" />
-
-          {/* 系统信息标签 */}
-          {systemInfo && (
-            <div className="flex items-center gap-2">
-              <span className="tag tag-blue">
-                {formatPlatform(systemInfo.platform)} {systemInfo.arch}
-              </span>
-              {installStatus.installed && installStatus.version && (
-                <span className="tag tag-green">
-                  OpenClaw {installStatus.version}
-                </span>
-              )}
-            </div>
-          )}
+    <header className="h-16 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-xl border-b border-white/10 px-6 flex items-center justify-between">
+      {/* 左侧：Logo、标题和系统信息 */}
+      <div className="flex items-center gap-4">
+        {/* Logo 和标题 */}
+        <div className="flex items-center gap-3">
+          <Logo size="large" />
+          <div>
+            <h1 className="text-lg font-semibold text-white">OpenClaw CoralUI</h1>
+            <p className="text-xs text-white/40">OpenClaw 图形界面管理工具</p>
+          </div>
         </div>
 
-        {/* 右侧：Gateway 状态和刷新按钮 */}
-        <div className="header-right">
-          {/* Gateway 状态指示器 */}
-          {installStatus.installed && (
-            <div className={`status-badge ${statusInfo.color}`}>
-              <div className={`status-dot ${statusInfo.color}`} />
-              <span>Gateway {statusInfo.text}</span>
-            </div>
-          )}
+        {/* 垂直分隔线 */}
+        <div className="h-8 w-px bg-white/10" />
 
-          {/* 刷新按钮 */}
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className={`btn btn-secondary ${loading ? 'cursor-not-allowed' : ''}`}
-          >
-            {loading ? (
-              <>
-                <div className="spinner" />
-                <span>刷新中</span>
-              </>
-            ) : (
-              <>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                <span>刷新</span>
-              </>
+        {/* 系统信息标签 */}
+        {systemInfo && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">
+              {formatPlatform(systemInfo.platform)} {systemInfo.arch}
+            </Badge>
+            {installStatus.installed && installStatus.version && (
+              <Badge variant="success">
+                OpenClaw {installStatus.version}
+              </Badge>
             )}
-          </button>
-        </div>
+          </div>
+        )}
+      </div>
+
+      {/* 右侧：Gateway 状态和刷新按钮 */}
+      <div className="flex items-center gap-3">
+        {/* Gateway 状态指示器 */}
+        {installStatus.installed && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div className={`w-2 h-2 rounded-full ${
+              statusInfo.variant === 'success' ? 'bg-green-500 animate-pulse' :
+              statusInfo.variant === 'secondary' ? 'bg-gray-400' :
+              'bg-gray-500'
+            }`} />
+            <span className="text-sm text-white/80">Gateway {statusInfo.text}</span>
+          </div>
+        )}
+
+        {/* 刷新按钮 */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          disabled={loading}
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? '刷新中' : '刷新'}
+        </Button>
       </div>
     </header>
   )
