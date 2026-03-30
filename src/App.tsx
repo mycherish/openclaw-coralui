@@ -119,6 +119,7 @@ const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         isInstalled={installStatus.installed}
+        version={installStatus.version}
       >
         {renderPage()}
       </AppLayout>

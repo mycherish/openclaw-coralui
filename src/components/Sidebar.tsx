@@ -15,6 +15,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Logo from './Logo'
 
 export type NavItem = {
   id: string
@@ -26,6 +27,7 @@ interface SidebarProps {
   activeTab: string
   onTabChange: (tabId: string) => void
   isInstalled: boolean
+  version?: string
 }
 
 const navItems: NavItem[] = [
@@ -45,15 +47,16 @@ const bottomNavItems: NavItem[] = [
 const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
-  isInstalled
+  isInstalled,
+  version
 }) => {
   const renderNavItem = (item: NavItem) => {
     const isActive = activeTab === item.id
     const Icon = item.icon
-    
+
     // 未安装时，部分功能禁用
     const isDisabled = !isInstalled && ['monitor', 'logs'].includes(item.id)
-    
+
     return (
       <button
         key={item.id}
@@ -73,13 +76,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
         title={item.label}
       >
-        <Icon 
+        <Icon
           className={cn(
             'w-5 h-5 transition-all duration-200',
             isActive ? 'text-white' : 'text-white/60 group-hover:text-white/90'
-          )} 
+          )}
         />
-        
+
         {/* Tooltip */}
         <span className={cn(
           'absolute left-full ml-3 px-2 py-1 rounded-md',
@@ -89,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}>
           {item.label}
         </span>
-        
+
         {/* Active indicator */}
         {isActive && (
           <span className="absolute left-0 w-1 h-6 bg-blue-500 rounded-r-full" />
@@ -99,10 +102,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className="w-16 h-full bg-[#1a1a1a] border-r border-white/5 flex flex-col items-center py-4">
-      {/* Logo */}
-      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
-        <span className="text-white font-bold text-lg">O</span>
+    <aside className="w-16 h-full bg-[#1a1a1a] border-r border-white/5 flex flex-col items-center">
+      {/* 顶部留白，为原生红绿灯腾出空间 */}
+      <div className="w-full pt-8" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} />
+
+      {/* Logo 区域 */}
+      <div className="mb-6">
+        <Logo size="medium" />
+      </div>
+
+      {/* App 名称和版本 */}
+      <div className="mb-4 text-center">
+        <div className="text-[10px] font-semibold text-white/80">OpenClaw</div>
+        {version && (
+          <div className="text-[9px] text-white/40">v{version}</div>
+        )}
       </div>
 
       {/* Main Navigation */}
@@ -111,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Navigation */}
-      <nav className="flex flex-col items-center gap-2 pt-4 border-t border-white/5">
+      <nav className="flex flex-col items-center gap-2 py-4 border-t border-white/5">
         {bottomNavItems.map(item => renderNavItem(item))}
       </nav>
     </aside>
