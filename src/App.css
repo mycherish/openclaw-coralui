@@ -1,5 +1,6 @@
 /**
  * App 组件样式 - macOS 风格
+ * 重构为三栏布局
  */
 
 /* 确保 HTML 和 body 允许滚动 */
@@ -7,26 +8,22 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: auto !important;
-  overflow-y: auto !important;
+  overflow: hidden;
 }
 
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: auto !important;
-  overflow-y: auto !important;
 }
 
-.app-container {
-  min-height: 100vh;
-  height: 100vh;
-  overflow-y: auto;
+/* 页面容器 */
+.page-container {
+  min-height: 100%;
   background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
   position: relative;
 }
 
-.app-container::before {
+.page-container::before {
   content: '';
   position: absolute;
   top: 0;
@@ -37,94 +34,6 @@ body {
               radial-gradient(circle at 80% 50%, rgba(50, 215, 75, 0.06) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
-}
-
-.header {
-  position: relative;
-  z-index: 1;
-  padding: 20px 28px;
-  background: rgba(28, 28, 30, 0.8);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-text {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.3px;
-}
-
-.version-badge {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.06);
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.main-content {
-  position: relative;
-  z-index: 1;
-  padding: 28px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.grid-layout {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: repeat(12, 1fr);
-}
-
-/* 侧边栏 */
-.sidebar {
-  grid-column: span 4;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* 主内容区 */
-.main-area {
-  grid-column: span 8;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 /* 卡片样式增强 */
@@ -410,64 +319,26 @@ body {
 }
 
 /* 自定义滚动条样式 */
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 6px;
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.02);
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-::-webkit-scrollbar-thumb:active {
-  background: rgba(255, 255, 255, 0.3);
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* 响应式设计 */
-@media (max-width: 1024px) {
-  .sidebar {
-    grid-column: span 12;
-  }
-
-  .main-area {
-    grid-column: span 12;
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-right {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
-
 @media (max-width: 768px) {
-  .header {
-    padding: 16px 20px;
-  }
-
-  .main-content {
-    padding: 20px;
-  }
-
-  .grid-layout {
-    gap: 16px;
-  }
-
   .status-grid {
     grid-template-columns: 1fr;
   }

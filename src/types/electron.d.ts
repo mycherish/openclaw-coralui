@@ -153,6 +153,68 @@ export interface ElectronAPI {
   }>
 }
 
+/**
+ * 系统信息接口
+ */
+export interface SystemInfo {
+  platform: 'darwin' | 'win32' | 'linux'
+  arch: string
+  hostname: string
+  version: string
+  cpuCores?: number
+  totalMemory?: string
+  freeDisk?: string
+}
+
+/**
+ * OpenClaw 安装状态接口
+ */
+export interface InstallStatus {
+  installed: boolean
+  version?: string
+  error?: string
+}
+
+/**
+ * Gateway 状态接口
+ */
+export interface GatewayStatus {
+  status: 'running' | 'stopped' | 'unknown'
+  output: string
+}
+
+/**
+ * 健康状态接口
+ */
+export interface HealthStatus {
+  healthy: boolean
+  output: string
+}
+
+/**
+ * 节点状态接口
+ */
+export interface NodesStatus {
+  success: boolean
+  output: string
+}
+
+/**
+ * 模型状态接口
+ */
+export interface ModelsStatus {
+  success: boolean
+  output: string
+}
+
+/**
+ * 渠道状态接口
+ */
+export interface ChannelsStatus {
+  success: boolean
+  output: string
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI

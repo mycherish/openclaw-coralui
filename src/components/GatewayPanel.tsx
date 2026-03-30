@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react'
 import { Play, Square, RotateCw, Wifi } from 'lucide-react'
-import { useOpenClaw } from '../hooks/useOpenClaw'
+import { useOpenClaw } from '../contexts/OpenClawContext'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,7 @@ interface GatewayPanelProps {
   gatewayStatus: {
     status: 'running' | 'stopped' | 'unknown'
     output: string
-  }
+  } | null
 }
 
 const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
@@ -55,7 +55,7 @@ const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
    * 获取状态信息
    */
   const getStatusInfo = () => {
-    switch (gatewayStatus.status) {
+    switch (gatewayStatus?.status) {
       case 'running':
         return { variant: 'success' as const, text: '运行中' }
       case 'stopped':
@@ -66,6 +66,7 @@ const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
   }
 
   const statusInfo = getStatusInfo()
+  const isRunning = gatewayStatus?.status === 'running'
 
   return (
     <Card className="h-full">
@@ -93,7 +94,7 @@ const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
             variant="default"
             size="sm"
             onClick={handleStart}
-            disabled={loading || gatewayStatus.status === 'running'}
+            disabled={loading || isRunning}
             className="flex-1 bg-green-500 hover:bg-green-600"
           >
             <Play className="w-4 h-4 mr-2" />
@@ -104,7 +105,7 @@ const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
             variant="destructive"
             size="sm"
             onClick={handleStop}
-            disabled={loading || gatewayStatus.status !== 'running'}
+            disabled={loading || !isRunning}
             className="flex-1"
           >
             <Square className="w-4 h-4 mr-2" />
@@ -115,7 +116,7 @@ const GatewayPanel: React.FC<GatewayPanelProps> = ({ gatewayStatus }) => {
             variant="outline"
             size="sm"
             onClick={handleRestart}
-            disabled={loading || gatewayStatus.status !== 'running'}
+            disabled={loading || !isRunning}
             className="flex-1"
           >
             <RotateCw className="w-4 h-4 mr-2" />

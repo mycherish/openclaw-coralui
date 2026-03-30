@@ -1,20 +1,15 @@
 /**
- * useOpenClaw Hook
+ * OpenClaw Context
  *
- * 负责：OpenClaw 的状态管理和操作
- * - 检查是否安装
- * - 获取系统信息
- * - Gateway 控制（启动/停止/重启）
- * - 获取状态信息
- * - 安装/卸载
+ * 全局共享 OpenClaw 状态，避免多个 hook 实例导致状态不同步
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 
 /**
  * 系统信息接口
  */
-interface SystemInfo {
+export interface SystemInfo {
   platform: 'darwin' | 'win32' | 'linux'
   arch: string
   hostname: string
@@ -24,7 +19,7 @@ interface SystemInfo {
 /**
  * OpenClaw 安装状态接口
  */
-interface InstallStatus {
+export interface InstallStatus {
   installed: boolean
   version?: string
   error?: string
@@ -33,7 +28,7 @@ interface InstallStatus {
 /**
  * Gateway 状态接口
  */
-interface GatewayStatus {
+export interface GatewayStatus {
   status: 'running' | 'stopped' | 'unknown'
   output: string
 }
@@ -41,7 +36,7 @@ interface GatewayStatus {
 /**
  * 健康状态接口
  */
-interface HealthStatus {
+export interface HealthStatus {
   healthy: boolean
   output: string
 }
@@ -49,7 +44,7 @@ interface HealthStatus {
 /**
  * 节点状态接口
  */
-interface NodesStatus {
+export interface NodesStatus {
   success: boolean
   output: string
 }
@@ -57,7 +52,7 @@ interface NodesStatus {
 /**
  * 模型状态接口
  */
-interface ModelsStatus {
+export interface ModelsStatus {
   success: boolean
   output: string
 }
@@ -65,7 +60,7 @@ interface ModelsStatus {
 /**
  * 渠道状态接口
  */
-interface ChannelsStatus {
+export interface ChannelsStatus {
   success: boolean
   output: string
 }
@@ -73,14 +68,51 @@ interface ChannelsStatus {
 /**
  * 操作结果接口
  */
-interface OperationResult {
+export interface OperationResult {
   success: boolean
   output: string
   installed?: boolean
   version?: string
 }
 
-export const useOpenClaw = () => {
+/**
+ * Context 接口
+ */
+interface OpenClawContextType {
+  // 状态
+  systemInfo: SystemInfo | null
+  installStatus: InstallStatus
+  gatewayStatus: GatewayStatus
+  healthStatus: HealthStatus | null
+  nodesStatus: NodesStatus | null
+  modelsStatus: ModelsStatus | null
+  channelsStatus: ChannelsStatus | null
+  logs: string
+  loading: boolean
+
+  // 操作
+  getSystemInfo: () => Promise<SystemInfo | null>
+  checkInstallStatus: () => Promise<InstallStatus | null>
+  getGatewayStatus: () => Promise<{ status: string; output: string } | null>
+  getHealthStatus: () => Promise<HealthStatus | null>
+  getNodesStatus: () => Promise<NodesStatus | null>
+  getModelsStatus: () => Promise<ModelsStatus | null>
+  getChannelsStatus: () => Promise<ChannelsStatus | null>
+  getLogs: () => Promise<{ success: boolean; logs?: string } | null>
+  installOpenClaw: (method: 'script' | 'npm' | 'pnpm') => Promise<OperationResult>
+  startGateway: () => Promise<OperationResult>
+  stopGateway: () => Promise<OperationResult>
+  restartGateway: () => Promise<OperationResult>
+  uninstallOpenClaw: (level: 'service' | 'state' | 'workspace' | 'all') => Promise<OperationResult>
+  refreshAll: () => Promise<void>
+}
+
+const OpenClawContext = createContext<OpenClawContextType | null>(null)
+
+/**
+ * OpenClaw Provider
+ */
+export const OpenClawProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // 系统信息
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
 
@@ -151,15 +183,15 @@ export const useOpenClaw = () => {
       const status = await window.electron.getGatewayStatus()
 
       // 解析状态
-      let gatewayStatus: 'running' | 'stopped' | 'unknown' = 'unknown'
+      let gatewayStatusValue: 'running' | 'stopped' | 'unknown' = 'unknown'
       if (status.output.includes('running') || status.output.includes('active')) {
-        gatewayStatus = 'running'
+        gatewayStatusValue = 'running'
       } else if (status.output.includes('stopped') || status.output.includes('inactive')) {
-        gatewayStatus = 'stopped'
+        gatewayStatusValue = 'stopped'
       }
 
       setGatewayStatus({
-        status: gatewayStatus,
+        status: gatewayStatusValue,
         output: status.output
       })
 
@@ -234,11 +266,11 @@ export const useOpenClaw = () => {
    */
   const getLogs = useCallback(async () => {
     try {
-      const logs = await window.electron.getLogs()
-      if (logs.success) {
-        setLogs(logs.logs)
+      const logsResult = await window.electron.getLogs()
+      if (logsResult.success) {
+        setLogs(logsResult.logs)
       }
-      return logs
+      return logsResult
     } catch (error) {
       console.error('获取日志失败:', error)
       return null
@@ -409,12 +441,12 @@ export const useOpenClaw = () => {
     }
   }, [initialize])
 
-  // 初始化
+  // 初始化 - 只在 Provider 挂载时执行一次
   useEffect(() => {
     initialize()
-  }, []) // 只在组件挂载时执行一次
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return {
+  const value: OpenClawContextType = {
     // 状态
     systemInfo,
     installStatus,
@@ -442,4 +474,25 @@ export const useOpenClaw = () => {
     uninstallOpenClaw,
     refreshAll
   }
+
+  return (
+    <OpenClawContext.Provider value={value}>
+      {children}
+    </OpenClawContext.Provider>
+  )
 }
+
+/**
+ * useOpenClaw Hook
+ * 
+ * 从 Context 获取共享状态
+ */
+export const useOpenClaw = () => {
+  const context = useContext(OpenClawContext)
+  if (!context) {
+    throw new Error('useOpenClaw must be used within an OpenClawProvider')
+  }
+  return context
+}
+
+export default OpenClawContext

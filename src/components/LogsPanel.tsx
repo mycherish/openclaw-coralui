@@ -6,7 +6,7 @@
 
 import React from 'react'
 import { FileText, RefreshCw } from 'lucide-react'
-import { useOpenClaw } from '../hooks/useOpenClaw'
+import { useOpenClaw } from '../contexts/OpenClawContext'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { useOpenClaw } from '../hooks/useOpenClaw'
+import { useOpenClaw } from '../contexts/OpenClawContext'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,7 +19,6 @@ import {
   Package, 
   AlertTriangle,
   CheckCircle2,
-  Terminal,
   Info
 } from 'lucide-react'
 
@@ -35,10 +34,9 @@ interface InstallPanelProps {
     hostname: string
     version: string
   } | null
-  onRefresh?: () => void
 }
 
-const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo, onRefresh }) => {
+const InstallPanel: React.FC<InstallPanelProps> = ({ installStatus, systemInfo }) => {
   const { installOpenClaw, uninstallOpenClaw, loading } = useOpenClaw()
 
   // 安装方法选择
