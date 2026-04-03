@@ -246,7 +246,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ installStatus }) => {
                 <span className="text-white font-bold text-3xl">O</span>
               </div>
               <h2 className="text-xl font-bold text-white">OpenClaw CoralUI</h2>
-              <p className="text-white/50 mt-1">版本 1.0.0</p>
+              <p className="text-white/50 mt-1">版本 1.1.0</p>
             </div>
             
             <div className="space-y-3">

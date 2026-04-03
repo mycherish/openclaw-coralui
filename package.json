@@ -1,6 +1,6 @@
 {
   "name": "openclaw-coralui",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenClaw CoralUI - A modern GUI management tool for OpenClaw based on Electron",
   "main": "electron/main.js",
   "scripts": {
