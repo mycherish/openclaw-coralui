@@ -116,5 +116,66 @@ contextBridge.exposeInMainWorld('electron', {
   /**
    * 检查 pnpm 版本
    */
-  checkPnpmVersion: () => ipcRenderer.invoke('check-pnpm-version')
+  checkPnpmVersion: () => ipcRenderer.invoke('check-pnpm-version'),
+
+  // ============================================================================
+  // Quick Chat API
+  // ============================================================================
+
+  /**
+   * Quick Chat 发送消息
+   */
+  quickChatSend: (message) => ipcRenderer.invoke('quick-chat-send', message),
+
+  /**
+   * Quick Chat 加载历史消息（支持分页）
+   * @param {Object} options - 加载选项
+   * @param {string} options.beforeTimestamp - 加载此时间戳之前的消息
+   * @param {number} options.limit - 每次加载的消息数量，默认 20
+   */
+  quickChatLoadHistory: (options = {}) => ipcRenderer.invoke('quick-chat-load-history', options),
+
+  /**
+   * Quick Chat 检查 Gateway 状态
+   */
+  quickChatCheckGateway: () => ipcRenderer.invoke('quick-chat-check-gateway'),
+
+  /**
+   * Quick Chat 启动 Gateway
+   */
+  quickChatStartGateway: () => ipcRenderer.invoke('quick-chat-start-gateway'),
+
+  /**
+   * 关闭 Quick Chat 窗口
+   */
+  closeQuickChat: () => ipcRenderer.invoke('close-quick-chat'),
+
+  /**
+   * 显示主窗口
+   */
+  showMainWindow: () => ipcRenderer.invoke('show-main-window'),
+
+  // ============================================================================
+  // Settings API
+  // ============================================================================
+
+  /**
+   * 获取设置
+   */
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+
+  /**
+   * 保存设置
+   */
+  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+
+  /**
+   * 设置开机自启
+   */
+  setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
+
+  /**
+   * 设置 Quick Chat 快捷键
+   */
+  setQuickChatShortcut: (shortcut) => ipcRenderer.invoke('set-quick-chat-shortcut', shortcut)
 })

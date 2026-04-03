@@ -13,13 +13,26 @@ import InstallPage from './pages/InstallPage'
 import MonitorPage from './pages/MonitorPage'
 import LogsPage from './pages/LogsPage'
 import SettingsPage from './pages/SettingsPage'
+import { QuickChatWindow } from './components/QuickChat'
 import { Toaster } from '@/components/ui/toaster'
+
+/**
+ * Quick Chat 组件 - 独立窗口
+ */
+const QuickChatApp: React.FC = () => {
+  const handleClose = () => {
+    window.electron?.closeQuickChat()
+  }
+
+  return <QuickChatWindow onClose={handleClose} />
+}
 
 /**
  * App 组件
  */
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview')
+  const [isQuickChat, setIsQuickChat] = useState(false)
   
   // 记录上一次的安装状态，用于检测安装完成的时刻
   const prevInstalledRef = useRef<boolean | null>(null)
@@ -36,8 +49,23 @@ const App: React.FC = () => {
     loading
   } = useOpenClaw()
 
+  // 检测 URL hash 判断是否为 Quick Chat 模式
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash
+      setIsQuickChat(hash === '#/quickchat')
+    }
+    
+    checkHash()
+    window.addEventListener('hashchange', checkHash)
+    return () => window.removeEventListener('hashchange', checkHash)
+  }, [])
+
   // 安装完成时自动跳转到概览页（仅在从未安装变为已安装时触发）
   useEffect(() => {
+    // Quick Chat 模式不处理
+    if (isQuickChat) return
+    
     // 首次渲染时记录状态，不触发跳转
     if (prevInstalledRef.current === null) {
       prevInstalledRef.current = installStatus.installed
@@ -50,7 +78,7 @@ const App: React.FC = () => {
     }
     
     prevInstalledRef.current = installStatus.installed
-  }, [installStatus.installed])
+  }, [installStatus.installed, isQuickChat])
 
   /**
    * 渲染当前页面
@@ -113,6 +141,17 @@ const App: React.FC = () => {
     }
   }
 
+  // Quick Chat 模式：渲染独立窗口
+  if (isQuickChat) {
+    return (
+      <>
+        <QuickChatApp />
+        <Toaster />
+      </>
+    )
+  }
+
+  // 主界面模式
   return (
     <>
       <AppLayout

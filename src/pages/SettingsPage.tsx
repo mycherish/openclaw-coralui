@@ -4,13 +4,10 @@
  * 设置页面
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Monitor,
-  Bell,
-  Shield,
-  Database,
-  Palette,
+  Keyboard,
   Info
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,7 +18,7 @@ interface SettingsPageProps {
   installStatus: InstallStatus
 }
 
-type SettingsSection = 'general' | 'notifications' | 'security' | 'storage' | 'appearance' | 'about'
+type SettingsSection = 'general' | 'shortcuts' | 'about'
 
 interface SettingsItem {
   id: SettingsSection
@@ -32,10 +29,7 @@ interface SettingsItem {
 
 const settingsItems: SettingsItem[] = [
   { id: 'general', label: '常规', icon: <Monitor className="w-4 h-4" />, description: '基本设置' },
-  { id: 'notifications', label: '通知', icon: <Bell className="w-4 h-4" />, description: '通知设置' },
-  { id: 'security', label: '安全', icon: <Shield className="w-4 h-4" />, description: '安全选项' },
-  { id: 'storage', label: '存储', icon: <Database className="w-4 h-4" />, description: '存储管理' },
-  { id: 'appearance', label: '外观', icon: <Palette className="w-4 h-4" />, description: '主题设置' },
+  { id: 'shortcuts', label: '快捷键', icon: <Keyboard className="w-4 h-4" />, description: '快捷键设置' },
   { id: 'about', label: '关于', icon: <Info className="w-4 h-4" />, description: '关于应用' },
 ]
 
@@ -44,7 +38,124 @@ const settingsItems: SettingsItem[] = [
  */
 const SettingsPage: React.FC<SettingsPageProps> = ({ installStatus }) => {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general')
+  const [autoLaunch, setAutoLaunch] = useState(false)
+  const [startMinimized, setStartMinimized] = useState(false)
+  const [quickChatShortcut, setQuickChatShortcut] = useState('CommandOrControl+Shift+O')
+  const [isRecordingShortcut, setIsRecordingShortcut] = useState(false)
   const { toast } = useToast()
+
+  // 加载设置
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await window.electron?.getSettings()
+        if (settings) {
+          setAutoLaunch(settings.autoLaunch || false)
+          setStartMinimized(settings.startMinimized || false)
+          setQuickChatShortcut(settings.quickChatShortcut || 'CommandOrControl+Shift+O')
+        }
+      } catch (e) {
+        console.error('加载设置失败:', e)
+      }
+    }
+    loadSettings()
+  }, [])
+
+  // 切换开机自启
+  const handleAutoLaunchChange = async (checked: boolean) => {
+    try {
+      const result = await window.electron?.setAutoLaunch(checked)
+      if (result?.success) {
+        setAutoLaunch(checked)
+        toast({
+          title: checked ? '已开启开机自启' : '已关闭开机自启',
+          description: checked ? '应用将在系统启动时自动运行' : '应用不会自动启动',
+        })
+      } else {
+        toast({
+          title: '设置失败',
+          description: result?.error || '未知错误',
+          variant: 'destructive',
+        })
+      }
+    } catch (e: any) {
+      toast({
+        title: '设置失败',
+        description: e.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // 切换启动时最小化
+  const handleStartMinimizedChange = async (checked: boolean) => {
+    setStartMinimized(checked)
+    await window.electron?.saveSettings({ startMinimized: checked })
+  }
+
+  // 开始录制快捷键
+  const handleStartRecording = () => {
+    setIsRecordingShortcut(true)
+    toast({
+      title: '请按下新的快捷键',
+      description: '按下组合键后自动保存',
+    })
+  }
+
+  // 监听快捷键录制
+  useEffect(() => {
+    if (!isRecordingShortcut) return
+
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+
+      // 构建快捷键字符串
+      const parts: string[] = []
+      if (e.metaKey || e.ctrlKey) parts.push('CommandOrControl')
+      if (e.shiftKey) parts.push('Shift')
+      if (e.altKey) parts.push('Alt')
+      
+      // 添加主键
+      if (e.key && e.key.length === 1) {
+        parts.push(e.key.toUpperCase())
+      } else if (e.key === 'Space') {
+        parts.push('Space')
+      } else if (e.key.startsWith('Arrow')) {
+        parts.push(e.key.replace('Arrow', ''))
+      } else if (e.key === 'Escape') {
+        setIsRecordingShortcut(false)
+        toast({ title: '已取消录制' })
+        return
+      } else {
+        parts.push(e.key)
+      }
+
+      if (parts.length > 1) {
+        const newShortcut = parts.join('+')
+        setQuickChatShortcut(newShortcut)
+        setIsRecordingShortcut(false)
+        
+        // 保存快捷键
+        const result = await window.electron?.setQuickChatShortcut(newShortcut)
+        if (result?.success) {
+          toast({
+            title: '快捷键已更新',
+            description: `Quick Chat 快捷键已设置为: ${newShortcut.replace('CommandOrControl', '⌘').replace('Shift', '⇧')}`,
+          })
+        } else {
+          toast({
+            title: '设置失败',
+            description: result?.error || '未知错误',
+            variant: 'destructive',
+          })
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isRecordingShortcut, toast])
 
   const renderSectionContent = () => {
     switch (activeSection) {
@@ -59,154 +170,69 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ installStatus }) => {
                     <p className="text-white">开机自动启动</p>
                     <p className="text-sm text-white/50">系统启动时自动运行 OpenClaw</p>
                   </div>
-                  <input type="checkbox" className="w-4 h-4 accent-blue-500" />
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 accent-blue-500" 
+                    checked={autoLaunch}
+                    onChange={(e) => handleAutoLaunchChange(e.target.checked)}
+                  />
                 </label>
                 <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
                   <div>
                     <p className="text-white">启动时最小化</p>
                     <p className="text-sm text-white/50">启动后自动最小化到系统托盘</p>
                   </div>
-                  <input type="checkbox" className="w-4 h-4 accent-blue-500" />
-                </label>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-white/70 mb-4">自动更新</h3>
-              <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                <div>
-                  <p className="text-white">自动检查更新</p>
-                  <p className="text-sm text-white/50">定期检查新版本并提示更新</p>
-                </div>
-                <input type="checkbox" defaultChecked className="w-4 h-4 accent-blue-500" />
-              </label>
-            </div>
-          </div>
-        )
-      
-      case 'notifications':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-white/70 mb-4">通知类型</h3>
-              <div className="space-y-4">
-                <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                  <div>
-                    <p className="text-white">服务状态变更</p>
-                    <p className="text-sm text-white/50">服务启动、停止或异常时通知</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-blue-500" />
-                </label>
-                <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                  <div>
-                    <p className="text-white">错误告警</p>
-                    <p className="text-sm text-white/50">发生错误时发送通知</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-blue-500" />
-                </label>
-                <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                  <div>
-                    <p className="text-white">更新提示</p>
-                    <p className="text-sm text-white/50">有新版本可用时通知</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-blue-500" />
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 accent-blue-500" 
+                    checked={startMinimized}
+                    onChange={(e) => handleStartMinimizedChange(e.target.checked)}
+                  />
                 </label>
               </div>
             </div>
           </div>
         )
       
-      case 'security':
-        return (
-          <div className="space-y-6">
-            <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-              <p className="text-yellow-300 text-sm">
-                安全设置需要重启应用才能生效
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-white/70 mb-4">访问控制</h3>
-              <div className="space-y-4">
-                <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                  <div>
-                    <p className="text-white">仅本地访问</p>
-                    <p className="text-sm text-white/50">只允许本机访问管理界面</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-blue-500" />
-                </label>
-                <label className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
-                  <div>
-                    <p className="text-white">启用 API 密钥</p>
-                    <p className="text-sm text-white/50">API 请求需要密钥验证</p>
-                  </div>
-                  <input type="checkbox" className="w-4 h-4 accent-blue-500" />
-                </label>
-              </div>
-            </div>
-          </div>
-        )
-      
-      case 'storage':
+      case 'shortcuts':
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-sm font-medium text-white/70 mb-4">数据目录</h3>
-              <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-                <p className="text-white text-sm mb-2">当前安装路径</p>
-                <p className="text-white/50 text-xs font-mono break-all">
-                  ~/.openclaw
-                </p>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-white/70 mb-4">日志设置</h3>
+              <h3 className="text-sm font-medium text-white/70 mb-4">快捷键设置</h3>
               <div className="space-y-4">
                 <div className="p-4 rounded-lg bg-white/5 border border-white/10">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-white">日志保留天数</p>
-                    <select className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-sm">
-                      <option value="7">7 天</option>
-                      <option value="14">14 天</option>
-                      <option value="30" selected>30 天</option>
-                      <option value="90">90 天</option>
-                    </select>
+                    <div>
+                      <p className="text-white">Quick Chat 快捷键</p>
+                      <p className="text-sm text-white/50">按下快捷键快速打开对话窗口</p>
+                    </div>
                   </div>
-                  <p className="text-white/50 text-xs">超过保留期的日志将被自动清理</p>
+                  <div className="flex items-center gap-3">
+                    <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 font-mono text-white">
+                      {quickChatShortcut
+                        .replace('CommandOrControl', '⌘')
+                        .replace('Shift', '⇧')
+                        .replace('Alt', '⌥')
+                        .replace(/\+/g, ' + ')}
+                    </div>
+                    <button
+                      onClick={handleStartRecording}
+                      className={cn(
+                        'px-4 py-2 rounded-lg border transition-colors',
+                        isRecordingShortcut
+                          ? 'bg-blue-500/20 border-blue-500/30 text-blue-300'
+                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                      )}
+                    >
+                      {isRecordingShortcut ? '录制中...' : '修改'}
+                    </button>
+                  </div>
+                  {isRecordingShortcut && (
+                    <p className="text-sm text-blue-300 mt-2">
+                      请按下新的快捷键组合（按 Esc 取消）
+                    </p>
+                  )}
                 </div>
-                <button
-                  onClick={() => {
-                    toast({
-                      title: '日志已清理',
-                      description: '历史日志已成功清理',
-                    })
-                  }}
-                  className="w-full px-4 py-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-colors"
-                >
-                  清理日志
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      
-      case 'appearance':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-medium text-white/70 mb-4">主题</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <button className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-white/30 transition-colors text-center">
-                  <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-white border-2 border-blue-500" />
-                  <p className="text-white text-sm">浅色</p>
-                </button>
-                <button className="p-4 rounded-lg bg-white/15 border-2 border-blue-500 transition-colors text-center">
-                  <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-[#0d0d0d] border-2 border-blue-500" />
-                  <p className="text-white text-sm">深色</p>
-                </button>
-                <button className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-white/30 transition-colors text-center">
-                  <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-gradient-to-b from-white to-[#0d0d0d] border border-white/30" />
-                  <p className="text-white text-sm">跟随系统</p>
-                </button>
               </div>
             </div>
           </div>
@@ -238,20 +264,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ installStatus }) => {
               </div>
               <div className="flex justify-between p-3 rounded-lg bg-white/5">
                 <span className="text-white/60">Node.js</span>
-                <span className="text-white font-mono">18.17.0</span>
+                <span className="text-white font-mono">{process.versions.node}</span>
               </div>
             </div>
             
             <div className="pt-4 border-t border-white/10 text-center">
-              <a href="#" className="text-blue-400 hover:text-blue-300 text-sm">
-                检查更新
-              </a>
-              <span className="text-white/20 mx-3">|</span>
-              <a href="#" className="text-blue-400 hover:text-blue-300 text-sm">
+              <a href="https://github.com/openclaw/openclaw" className="text-blue-400 hover:text-blue-300 text-sm">
                 GitHub
               </a>
               <span className="text-white/20 mx-3">|</span>
-              <a href="#" className="text-blue-400 hover:text-blue-300 text-sm">
+              <a href="https://docs.openclaw.ai" className="text-blue-400 hover:text-blue-300 text-sm">
                 使用文档
               </a>
             </div>

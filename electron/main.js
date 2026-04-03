@@ -1,10 +1,22 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, globalShortcut, Tray, Menu, nativeImage } = require('electron')
 const path = require('path')
 const { exec, spawn } = require('child_process')
 const os = require('os')
 const fs = require('fs')
 const https = require('https')
 const { extract } = require('adm-zip')
+
+/**
+ * 平台检测
+ */
+const isMac = os.platform() === 'darwin'
+const isWin = os.platform() === 'win32'
+
+/**
+ * 托盘图标和窗口引用
+ */
+let tray = null
+let quickChatWindow = null
 
 /**
  * Electron 主进程
@@ -243,6 +255,7 @@ function createWindow() {
     height: 900,
     minWidth: 900,
     minHeight: 700,
+    show: false, // 初始隐藏，后台运行
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -265,28 +278,242 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+  
+  // 窗口准备好后再显示（避免白屏闪烁）
+  mainWindow.once('ready-to-show', () => {
+    // 开发模式默认显示主窗口
+    if (process.env.NODE_ENV === 'development') {
+      mainWindow.show()
+    }
+    // 生产模式保持隐藏，通过快捷键或托盘打开
+  })
+}
+
+/**
+ * 创建系统托盘
+ */
+function createTray() {
+  // 托盘图标路径
+  const iconPath = path.join(__dirname, '../build/icon.png')
+  let trayIcon
+  
+  try {
+    if (fs.existsSync(iconPath)) {
+      trayIcon = nativeImage.createFromPath(iconPath)
+      // macOS 调整图标大小
+      if (isMac) {
+        trayIcon = trayIcon.resize({ width: 18, height: 18 })
+      }
+    } else {
+      // 如果图标不存在，创建一个空白图标
+      trayIcon = nativeImage.createEmpty()
+    }
+  } catch (e) {
+    trayIcon = nativeImage.createEmpty()
+  }
+  
+  tray = new Tray(trayIcon)
+  
+  const contextMenu = Menu.buildFromTemplate([
+    { 
+      label: '打开主界面', 
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+        }
+      }
+    },
+    { 
+      label: 'Quick Chat', 
+      accelerator: 'CmdOrCtrl+Shift+O',
+      click: () => showQuickChat() 
+    },
+    { type: 'separator' },
+    { 
+      label: '开机自启', 
+      type: 'checkbox', 
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (item) => {
+        app.setLoginItemSettings({ openAtLogin: item.checked })
+      }
+    },
+    { type: 'separator' },
+    { 
+      label: isMac ? '退出' : 'Exit', 
+      click: () => {
+        globalShortcut.unregisterAll()
+        app.quit()
+      }
+    }
+  ])
+  
+  tray.setToolTip('OpenClaw CoralUI')
+  tray.setContextMenu(contextMenu)
+  
+  // Windows: 点击托盘图标显示主窗口
+  if (isWin) {
+    tray.on('click', () => {
+      if (mainWindow) {
+        mainWindow.show()
+        mainWindow.focus()
+      }
+    })
+  }
+  
+  // macOS: 点击托盘图标显示菜单
+  if (isMac) {
+    tray.on('click', () => {
+      tray.popUpContextMenu()
+    })
+  }
+}
+
+/**
+ * 创建 Quick Chat 窗口
+ */
+function createQuickChatWindow() {
+  if (quickChatWindow) {
+    quickChatWindow.show()
+    quickChatWindow.focus()
+    return
+  }
+  
+  // 获取屏幕尺寸，居中显示
+  const { screen } = require('electron')
+  const primaryDisplay = screen.getPrimaryDisplay()
+  const { width, height } = primaryDisplay.workAreaSize
+  
+  const windowWidth = 600
+  const windowHeight = 450
+  
+  quickChatWindow = new BrowserWindow({
+    width: windowWidth,
+    height: windowHeight,
+    x: Math.round((width - windowWidth) / 2),
+    y: Math.round((height - windowHeight) / 3), // 稍微靠上
+    frame: false,           // 无边框
+    transparent: true,      // 透明背景
+    alwaysOnTop: true,      // 始终置顶
+    resizable: false,
+    skipTaskbar: true,      // 不在任务栏显示
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+  
+  // 加载 Quick Chat 页面
+  if (process.env.NODE_ENV === 'development') {
+    quickChatWindow.loadURL('http://localhost:5173/#/quickchat')
+  } else {
+    quickChatWindow.loadFile(path.join(__dirname, '../dist/index.html'), {
+      hash: '/quickchat'
+    })
+  }
+  
+  // 失去焦点时隐藏
+  quickChatWindow.on('blur', () => {
+    // 延迟隐藏，避免点击时立即隐藏
+    setTimeout(() => {
+      if (quickChatWindow && !quickChatWindow.isDestroyed()) {
+        quickChatWindow.hide()
+      }
+    }, 100)
+  })
+  
+  quickChatWindow.on('closed', () => {
+    quickChatWindow = null
+  })
+}
+
+/**
+ * 显示 Quick Chat 窗口
+ */
+function showQuickChat() {
+  if (!quickChatWindow || quickChatWindow.isDestroyed()) {
+    createQuickChatWindow()
+  } else {
+    if (quickChatWindow.isVisible()) {
+      quickChatWindow.hide()
+    } else {
+      quickChatWindow.show()
+      quickChatWindow.focus()
+    }
+  }
 }
 
 /**
  * 应用程序准备就绪
  */
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   createWindow()
+  createTray()
+
+  // 加载设置并注册快捷键
+  try {
+    const settings = await ipcMain.invoke('get-settings')
+    const accelerator = settings.quickChatShortcut || 'CommandOrControl+Shift+O'
+    
+    const ret = globalShortcut.register(accelerator, () => {
+      showQuickChat()
+    })
+    
+    if (!ret) {
+      console.error('全局快捷键注册失败:', accelerator)
+    } else {
+      currentQuickChatShortcut = accelerator
+      console.log(`全局快捷键已注册: ${accelerator}`)
+    }
+  } catch (error) {
+    // 使用默认快捷键
+    const accelerator = 'CommandOrControl+Shift+O'
+    const ret = globalShortcut.register(accelerator, () => {
+      showQuickChat()
+    })
+    
+    if (ret) {
+      currentQuickChatShortcut = accelerator
+      console.log(`全局快捷键已注册 (默认): ${accelerator}`)
+    }
+  }
 
   app.on('activate', () => {
+    // macOS: 点击 Dock 图标显示主窗口
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow()
+    }
+    if (mainWindow) {
+      mainWindow.show()
+      mainWindow.focus()
     }
   })
 })
 
 /**
- * 所有窗口关闭时退出应用（macOS 除外）
+ * 所有窗口关闭时不退出应用（后台运行）
+ * macOS: 默认行为就是不退出
+ * Windows: 需要修改为隐藏到托盘
  */
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
+  // 不退出应用，保持后台运行
+  // 用户通过托盘菜单退出
+  if (isWin) {
+    // Windows: 隐藏到托盘，不退出
+    if (mainWindow) {
+      mainWindow.hide()
+    }
   }
+  // macOS 默认不退出，无需处理
+})
+
+/**
+ * 应用退出前清理
+ */
+app.on('will-quit', () => {
+  // 注销所有快捷键
+  globalShortcut.unregisterAll()
 })
 
 // ============================================================================
@@ -962,5 +1189,494 @@ ipcMain.handle('check-npm-version', async () => {
 ipcMain.handle('check-pnpm-version', async () => {
   const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
   return await executeCommand(`${pnpmCmd} --version`, 5000)
+})
+
+// ============================================================================
+// Quick Chat 相关 IPC 处理
+// ============================================================================
+
+/**
+ * Quick Chat 加载历史消息
+ * 从 openclaw session 文件读取对话历史
+ * 支持分页加载：beforeTimestamp 用于加载更早的消息
+ * 
+ * @param {Object} options - 加载选项
+ * @param {string} options.beforeTimestamp - 加载此时间戳之前的消息（用于分页）
+ * @param {number} options.limit - 每次加载的消息数量，默认 20
+ */
+ipcMain.handle('quick-chat-load-history', async (event, options = {}) => {
+  const fs = require('fs')
+  const path = require('path')
+  const readline = require('readline')
+  
+  const { beforeTimestamp, limit = 20 } = options
+  
+  return new Promise((resolve) => {
+    // Session 文件路径
+    // 使用 feishu-default agent 的 main session（与终端 openclaw tui 共享）
+    const possiblePaths = [
+      path.join(os.homedir(), '.openclaw', 'agents', 'feishu-default', 'sessions', 'sessions.json'),
+      path.join(os.homedir(), '.openclaw', 'agents', 'default', 'sessions', 'sessions.json')
+    ]
+    
+    // 先找到 sessions.json
+    let sessionsJsonPath = null
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        sessionsJsonPath = p
+        break
+      }
+    }
+    
+    if (!sessionsJsonPath) {
+      resolve({ success: true, messages: [], hasMore: false })
+      return
+    }
+    
+    try {
+      // 读取 sessions.json 找到 main session
+      const sessionsData = JSON.parse(fs.readFileSync(sessionsJsonPath, 'utf8'))
+      
+      // 查找 main session
+      let sessionFile = null
+      for (const [key, session] of Object.entries(sessionsData)) {
+        // 查找 main session（agent:xxx:main 格式）
+        if (key.endsWith(':main') && session.sessionFile) {
+          sessionFile = session.sessionFile
+          break
+        }
+      }
+      
+      if (!sessionFile) {
+        resolve({ success: true, messages: [], hasMore: false })
+        return
+      }
+      
+      // 读取 session jsonl 文件
+      if (!fs.existsSync(sessionFile)) {
+        resolve({ success: true, messages: [], hasMore: false })
+        return
+      }
+      
+      const messages = []
+      const fileStream = fs.createReadStream(sessionFile)
+      const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity
+      })
+      
+      rl.on('line', (line) => {
+        try {
+          const entry = JSON.parse(line)
+          
+          // 只提取消息
+          if (entry.type === 'message' && entry.message) {
+            const msg = entry.message
+            
+            // 提取文本内容
+            let content = ''
+            if (Array.isArray(msg.content)) {
+              for (const part of msg.content) {
+                if (part.type === 'text' && part.text) {
+                  content += part.text
+                }
+              }
+            } else if (typeof msg.content === 'string') {
+              content = msg.content
+            }
+            
+            // 过滤掉心跳消息
+            if (content.includes('HEARTBEAT.md') || content === 'HEARTBEAT_OK') {
+              return
+            }
+            
+            // 过滤掉 Sender (untrusted metadata) 部分，只保留实际消息
+            if (content.includes('Sender (untrusted metadata):')) {
+              // 提取 [时间] 后面的实际内容
+              const match = content.match(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}.*?\]\s*([\s\S]*)/)
+              if (match && match[1]) {
+                content = match[1].trim()
+              }
+            }
+            
+            // 只保留用户和助手消息
+            if (msg.role === 'user' || msg.role === 'assistant') {
+              messages.push({
+                role: msg.role,
+                content: content.trim(),
+                timestamp: entry.timestamp || new Date().toISOString()
+              })
+            }
+          }
+        } catch (e) {
+          // 忽略解析错误
+        }
+      })
+      
+      rl.on('close', () => {
+        // 按时间排序（最新的在前）
+        messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        
+        let filteredMessages = messages
+        
+        // 如果指定了 beforeTimestamp，只加载更早的消息
+        if (beforeTimestamp) {
+          const beforeDate = new Date(beforeTimestamp)
+          filteredMessages = messages.filter(m => new Date(m.timestamp) < beforeDate)
+        }
+        
+        // 取前 limit 条
+        const resultMessages = filteredMessages.slice(0, limit)
+        
+        // 判断是否还有更多消息
+        const hasMore = filteredMessages.length > limit
+        
+        // 返回结果（按时间正序，最早的在前）
+        resolve({ 
+          success: true, 
+          messages: resultMessages.reverse(),
+          total: messages.length,
+          hasMore,
+          loadedCount: resultMessages.length
+        })
+      })
+      
+    } catch (error) {
+      resolve({ 
+        success: false, 
+        error: error.message,
+        messages: [],
+        hasMore: false
+      })
+    }
+  })
+})
+
+/**
+ * Quick Chat 发送消息到 OpenClaw
+ * 通过 Gateway 发送消息
+ */
+ipcMain.handle('quick-chat-send', async (event, message) => {
+  return new Promise((resolve) => {
+    const openclawPath = '/Users/xuweidong/.nvm/versions/node/v22.20.0/bin/openclaw'
+    
+    // 通过 Gateway 发送消息
+    // Gateway 会自动处理 session 管理
+    const args = [
+      'agent',
+      '--agent', 'feishu-default',
+      '--session-id', 'main',
+      '--message', message,
+      '--timeout', '120'  // 2 分钟超时
+    ]
+    
+    const childProcess = spawn(openclawPath, args, {
+      cwd: os.homedir(),
+      env: { 
+        ...process.env,
+        PATH: process.env.PATH
+      },
+      stdio: ['ignore', 'pipe', 'pipe']
+    })
+    
+    let stdout = ''
+    let stderr = ''
+    
+    childProcess.stdout.on('data', (data) => {
+      stdout += data.toString()
+    })
+    
+    childProcess.stderr.on('data', (data) => {
+      stderr += data.toString()
+    })
+    
+    // 设置超时 - 2分钟，AI 可能需要较长时间思考或调用工具
+    const timeout = setTimeout(() => {
+      childProcess.kill()
+      resolve({
+        success: false,
+        error: '请求超时（2分钟），请尝试简化问题或稍后重试'
+      })
+    }, 120000)
+    
+    childProcess.on('close', (code) => {
+      clearTimeout(timeout)
+      
+      if (code === 0 && stdout) {
+        // 过滤掉插件日志，只保留实际回复
+        const lines = stdout.split('\n')
+        const replyLines = []
+        let inReply = false
+        
+        for (const line of lines) {
+          // 跳过插件日志
+          if (line.includes('[plugins]') || 
+              line.includes('[feishu') ||
+              line.includes('[tools]') ||
+              line.includes('Config was last written')) {
+            continue
+          }
+          // 保留其他内容
+          if (line.trim()) {
+            replyLines.push(line)
+          }
+        }
+        
+        const reply = replyLines.join('\n').trim()
+        
+        if (reply) {
+          resolve({
+            success: true,
+            response: reply
+          })
+        } else {
+          resolve({
+            success: true,
+            response: stdout.trim() || '无响应'
+          })
+        }
+      } else {
+        resolve({
+          success: false,
+          error: stderr || '发送失败'
+        })
+      }
+    })
+    
+    childProcess.on('error', (error) => {
+      clearTimeout(timeout)
+      resolve({
+        success: false,
+        error: `执行失败: ${error.message}`
+      })
+    })
+  })
+})
+
+/**
+ * Quick Chat 检查 Gateway 是否运行
+ */
+ipcMain.handle('quick-chat-check-gateway', async () => {
+  const http = require('http')
+  const fs = require('fs')
+  
+  // 从配置文件读取 Gateway 端口，默认 18789
+  let gatewayPort = 18789
+  try {
+    const configPath = path.join(os.homedir(), '.openclaw', 'openclaw.json')
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+      gatewayPort = config.gateway?.port || config.port || 18789
+    }
+  } catch (e) {
+    // 使用默认端口
+  }
+  
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'localhost',
+      port: gatewayPort,
+      path: '/health',
+      method: 'GET',
+      timeout: 3000
+    }
+    
+    const req = http.request(options, (res) => {
+      resolve({ running: true, port: gatewayPort })
+    })
+    
+    req.on('error', () => {
+      resolve({ running: false, port: gatewayPort })
+    })
+    
+    req.on('timeout', () => {
+      req.destroy()
+      resolve({ running: false, port: gatewayPort })
+    })
+    
+    req.end()
+  })
+})
+
+/**
+ * Quick Chat 启动 Gateway
+ */
+ipcMain.handle('quick-chat-start-gateway', async () => {
+  return await executeCommand('openclaw gateway start', 10000)
+})
+
+/**
+ * 关闭 Quick Chat 窗口
+ */
+ipcMain.handle('close-quick-chat', () => {
+  if (quickChatWindow && !quickChatWindow.isDestroyed()) {
+    quickChatWindow.hide()
+  }
+})
+
+/**
+ * 显示主窗口
+ */
+ipcMain.handle('show-main-window', () => {
+  if (mainWindow) {
+    mainWindow.show()
+    mainWindow.focus()
+  }
+})
+
+/**
+ * 设置文件路径
+ */
+const settingsPath = path.join(app.getPath('userData'), 'settings.json')
+
+/**
+ * 默认设置
+ */
+const defaultSettings = {
+  autoLaunch: false,
+  startMinimized: false,
+  quickChatShortcut: 'CommandOrControl+Shift+O'
+}
+
+/**
+ * 获取设置
+ */
+ipcMain.handle('get-settings', async () => {
+  try {
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf8')
+      return { ...defaultSettings, ...JSON.parse(data) }
+    }
+    return defaultSettings
+  } catch (error) {
+    console.error('读取设置失败:', error)
+    return defaultSettings
+  }
+})
+
+/**
+ * 保存设置
+ */
+ipcMain.handle('save-settings', async (event, settings) => {
+  try {
+    const currentSettings = await ipcMain.invoke('get-settings')
+    const newSettings = { ...currentSettings, ...settings }
+    fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2))
+    return { success: true }
+  } catch (error) {
+    console.error('保存设置失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+/**
+ * 设置开机自启
+ */
+ipcMain.handle('set-auto-launch', async (event, enabled) => {
+  try {
+    const appFolder = path.dirname(process.execPath)
+    const exePath = isMac 
+      ? path.dirname(path.dirname(path.dirname(appFolder))) // macOS .app 路径
+      : process.execPath
+
+    if (isMac) {
+      // macOS 使用 LaunchAgent
+      const plistPath = path.join(os.homedir(), 'Library', 'LaunchAgents', 'ai.openclaw.coralui.plist')
+      
+      if (enabled) {
+        const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.openclaw.coralui</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${exePath}</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+</dict>
+</plist>`
+        fs.writeFileSync(plistPath, plistContent)
+      } else {
+        if (fs.existsSync(plistPath)) {
+          fs.unlinkSync(plistPath)
+        }
+      }
+    } else if (isWin) {
+      // Windows 使用注册表
+      app.setLoginItemSettings({
+        openAtLogin: enabled,
+        path: exePath,
+        args: enabled ? ['--hidden'] : []
+      })
+    }
+
+    // 保存设置
+    await ipcMain.invoke('save-settings', { autoLaunch: enabled })
+    
+    return { success: true }
+  } catch (error) {
+    console.error('设置开机自启失败:', error)
+    return { success: false, error: error.message }
+  }
+})
+
+/**
+ * 设置 Quick Chat 快捷键
+ */
+let currentQuickChatShortcut = 'CommandOrControl+Shift+O'
+
+ipcMain.handle('set-quick-chat-shortcut', async (event, shortcut) => {
+  try {
+    // 注销旧快捷键
+    if (currentQuickChatShortcut) {
+      globalShortcut.unregister(currentQuickChatShortcut)
+    }
+
+    // 注册新快捷键
+    const success = globalShortcut.register(shortcut, () => {
+      if (quickChatWindow) {
+        if (quickChatWindow.isVisible()) {
+          quickChatWindow.hide()
+        } else {
+          quickChatWindow.show()
+          quickChatWindow.focus()
+          // 聚焦输入框
+          quickChatWindow.webContents.executeJavaScript(
+            'document.querySelector("textarea")?.focus()'
+          )
+        }
+      }
+    })
+
+    if (success) {
+      currentQuickChatShortcut = shortcut
+      // 保存设置
+      await ipcMain.invoke('save-settings', { quickChatShortcut: shortcut })
+      return { success: true }
+    } else {
+      // 恢复旧快捷键
+      if (currentQuickChatShortcut) {
+        globalShortcut.register(currentQuickChatShortcut, () => {
+          if (quickChatWindow) {
+            if (quickChatWindow.isVisible()) {
+              quickChatWindow.hide()
+            } else {
+              quickChatWindow.show()
+              quickChatWindow.focus()
+            }
+          }
+        })
+      }
+      return { success: false, error: '快捷键注册失败，可能已被占用' }
+    }
+  } catch (error) {
+    console.error('设置快捷键失败:', error)
+    return { success: false, error: error.message }
+  }
 })
 

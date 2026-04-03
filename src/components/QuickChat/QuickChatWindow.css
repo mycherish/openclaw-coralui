@@ -1,0 +1,487 @@
+/**
+ * QuickChatWindow 样式
+ * 透明背景、圆角窗口、动画效果
+ */
+
+.quickchat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 标题栏 */
+.quickchat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-app-region: drag; /* 允许拖动窗口 */
+}
+
+.quickchat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.quickchat-logo {
+  font-size: 18px;
+}
+
+.quickchat-actions {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag; /* 按钮可点击 */
+}
+
+.quickchat-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickchat-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* 消息区域 */
+.quickchat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quickchat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.quickchat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.quickchat-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.quickchat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 空状态 */
+.quickchat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.quickchat-empty-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.quickchat-empty-text {
+  font-size: 14px;
+}
+
+/* 加载历史消息 */
+.quickchat-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+}
+
+/* 加载更多历史消息（顶部） */
+.quickchat-loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+/* 上滑加载提示 */
+.quickchat-load-more-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 6px;
+  margin: 0 auto;
+}
+
+.quickchat-load-more-hint:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.quickchat-gateway-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.quickchat-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: none;
+  background: #10b981;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickchat-start-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.quickchat-start-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 消息样式 */
+.quickchat-message {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  max-width: 90%;
+}
+
+.quickchat-message.user {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  margin-left: auto;
+}
+
+.quickchat-message.assistant {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quickchat-message-role {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.quickchat-message-content {
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* Markdown 样式 */
+.quickchat-message-content h1,
+.quickchat-message-content h2,
+.quickchat-message-content h3,
+.quickchat-message-content h4 {
+  margin: 0.5em 0 0.3em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.quickchat-message-content h1 { font-size: 1.3em; }
+.quickchat-message-content h2 { font-size: 1.2em; }
+.quickchat-message-content h3 { font-size: 1.1em; }
+.quickchat-message-content h4 { font-size: 1em; }
+
+.quickchat-message-content p {
+  margin: 0.4em 0;
+}
+
+.quickchat-message-content ul,
+.quickchat-message-content ol {
+  margin: 0.4em 0;
+  padding-left: 1.5em;
+}
+
+.quickchat-message-content li {
+  margin: 0.2em 0;
+}
+
+.quickchat-message-content a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.quickchat-message-content a:hover {
+  text-decoration: underline;
+}
+
+/* 行内代码 */
+.quickchat-message-content .inline-code,
+.quickchat-message-content code:not([class*="language-"]) {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 0.9em;
+  color: #f472b6;
+}
+
+/* 代码块 */
+.quickchat-message-content pre {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0.5em 0;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quickchat-message-content pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+/* 代码高亮 - highlight.js 风格 */
+.quickchat-message-content .hljs-keyword,
+.quickchat-message-content .hljs-selector-tag {
+  color: #c678dd;
+}
+
+.quickchat-message-content .hljs-string,
+.quickchat-message-content .hljs-attr {
+  color: #98c379;
+}
+
+.quickchat-message-content .hljs-number,
+.quickchat-message-content .hljs-literal {
+  color: #d19a66;
+}
+
+.quickchat-message-content .hljs-function {
+  color: #61afef;
+}
+
+.quickchat-message-content .hljs-comment {
+  color: #5c6370;
+  font-style: italic;
+}
+
+/* 表格 */
+.quickchat-message-content .table-wrapper {
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.quickchat-message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.quickchat-message-content th,
+.quickchat-message-content td {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.quickchat-message-content th {
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+}
+
+.quickchat-message-content tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* 引用块 */
+.quickchat-message-content blockquote {
+  border-left: 3px solid rgba(59, 130, 246, 0.5);
+  margin: 0.5em 0;
+  padding: 0.3em 0 0.3em 1em;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 0 4px 4px 0;
+}
+
+/* 分割线 */
+.quickchat-message-content hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0.8em 0;
+}
+
+/* 图片 */
+.quickchat-message-content img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.3em 0;
+}
+
+.quickchat-message-content.loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 错误提示 */
+.quickchat-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+/* 输入区域 */
+.quickchat-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.quickchat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.quickchat-input:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.quickchat-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.quickchat-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quickchat-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  background: #3b82f6;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickchat-send-btn:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.quickchat-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 快捷键提示 */
+.quickchat-hint {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 16px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 动画 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quickchat-message {
+  animation: fadeIn 0.3s ease-out;
+}

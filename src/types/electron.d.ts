@@ -151,6 +151,84 @@ export interface ElectronAPI {
     success: boolean
     output: string
   }>
+
+  // ============================================================================
+  // Quick Chat API
+  // ============================================================================
+
+  /**
+   * Quick Chat 加载历史消息
+   */
+  quickChatLoadHistory(): Promise<{
+    success: boolean
+    messages?: Array<{
+      role: 'user' | 'assistant'
+      content: string
+      timestamp: string
+    }>
+    total?: number
+    error?: string
+  }>
+
+  /**
+   * Quick Chat 发送消息
+   */
+  quickChatSend(message: string): Promise<{
+    success: boolean
+    response?: string
+    error?: string
+  }>
+
+  /**
+   * 关闭 Quick Chat 窗口
+   */
+  closeQuickChat(): Promise<void>
+
+  /**
+   * 显示主窗口
+   */
+  showMainWindow(): Promise<void>
+
+  // ============================================================================
+  // Settings API
+  // ============================================================================
+
+  /**
+   * 获取设置
+   */
+  getSettings(): Promise<{
+    autoLaunch: boolean
+    startMinimized: boolean
+    quickChatShortcut: string
+  }>
+
+  /**
+   * 保存设置
+   */
+  saveSettings(settings: Partial<{
+    autoLaunch: boolean
+    startMinimized: boolean
+    quickChatShortcut: string
+  }>): Promise<{
+    success: boolean
+    error?: string
+  }>
+
+  /**
+   * 设置开机自启
+   */
+  setAutoLaunch(enabled: boolean): Promise<{
+    success: boolean
+    error?: string
+  }>
+
+  /**
+   * 设置 Quick Chat 快捷键
+   */
+  setQuickChatShortcut(shortcut: string): Promise<{
+    success: boolean
+    error?: string
+  }>
 }
 
 /**
